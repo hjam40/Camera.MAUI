@@ -6,9 +6,8 @@ public static class AppBuilderExtensions
     {
         builder.ConfigureMauiHandlers(h =>
         {
-            h.AddHandler<CameraView, CameraViewHandler>();
+            h.AddHandler(typeof(CameraView), typeof(CameraViewHandler));
         });
-
         return builder;
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-
+using Camera.MAUI;
 namespace Camera.MAUI.Test
 {
     public static class MauiProgram

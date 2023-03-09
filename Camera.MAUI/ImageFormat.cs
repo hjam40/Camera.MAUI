@@ -2,6 +2,5 @@
 public enum ImageFormat
 {
     JPEG,
-    PNG,
-    BMP
+    PNG
 }

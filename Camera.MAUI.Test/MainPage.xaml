@@ -3,28 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"
              x:Class="Camera.MAUI.Test.MainPage"
-             x:Name="cameraExample">
-
-    <Grid>
-        <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-            <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="200"/>
-            <HorizontalStackLayout HorizontalOptions="Center" Spacing="2">
-                <Label x:Name="cameraLabel" Text="Select a camera:" VerticalOptions="Center" BackgroundColor="White"/>
-                <Picker x:Name="cameraPicker" BindingContext="{x:Reference cameraView}" ItemsSource="{Binding Cameras}" VerticalOptions="Center" />
-                <CheckBox CheckedChanged="CheckBox_CheckedChanged" VerticalOptions="Center" Margin="5,0,0,0"/>
-                <Label Text="Mirrored Image" VerticalOptions="Center"/>
-            </HorizontalStackLayout>
-            <HorizontalStackLayout HorizontalOptions="Center">
-                <Button Text="Start Camera" Clicked="OnStartClicked" />
-                <Button Text="Stop Camera" Clicked="OnStopClicked" />
-                <Button Text="Take Photo" Clicked="OnSnapClicked" />
-            </HorizontalStackLayout>
-            <Image x:Name="snapPreview"
-                Source="dotnet_bot.png"
-                WidthRequest="300"
-                HeightRequest="200"
-                HorizontalOptions="Center" />
-        </VerticalStackLayout>
-    </Grid>
-
+             x:Name="cameraExample" Background="white">
+    <ScrollView>
+        <Grid>
+            <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                <Button HorizontalOptions="Center" Text="Go to Parameters Cam" Clicked="Button_Clicked" Margin="5"/>
+                <Button HorizontalOptions="Center" Text="Go to Fullscreen Cam" Clicked="Button2_Clicked" Margin="5"/>
+                <Button HorizontalOptions="Center" Text="Go to Code generation" Clicked="Button_Clicked_1" Margin="5"/>
+            </VerticalStackLayout>
+        </Grid>
+    </ScrollView>
 </ContentPage>

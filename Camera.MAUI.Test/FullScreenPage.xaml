@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"
+             x:Class="Camera.MAUI.Test.FullScreenPage"
+             Title="FullScreenPage">
+    <Grid HorizontalOptions="Fill" VerticalOptions="Fill">
+        <cv:CameraView x:Name="cameraView" HorizontalOptions="Fill" VerticalOptions="Fill"/>
+        <Button x:Name="controlButton" Text="Play" TextColor="DarkGray" VerticalOptions="End" HorizontalOptions="Center" Clicked="Button_Clicked" Margin="15" Background="#66666666"/>
+    </Grid>
+</ContentPage>

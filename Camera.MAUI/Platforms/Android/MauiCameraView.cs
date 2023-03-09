@@ -1,145 +1,290 @@
 ﻿using Android.Content;
-using Android.Views;
-using Android.Hardware.Camera2;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Android.Content.PM;
-using Java.Lang;
-using Android.Util;
-using Java.Util;
-using Android.Graphics;
-using Android.Media;
-using Size = Android.Util.Size;
-using static Android.Media.ImageReader;
-using Android.Hardware.Camera2.Params;
-using Android.App;
-using Android.Runtime;
-using Android.OS;
 using Android.Widget;
-using Java.Interop;
-using Java.Nio;
-using AndroidX.Core.App;
+using AndroidX.Camera.View;
+using AndroidX.Camera.Lifecycle;
+using AndroidX.Camera.Core;
+using Java.Util.Concurrent;
+using Android.Graphics;
 
 namespace Camera.MAUI.Platforms.Android;
 
-internal class MauiCameraView : SurfaceView
+internal class MauiCameraView: GridLayout
 {
     public CameraInfo Camera { get; set; }
+    public float MinZoomFactor
+    {
+        get
+        {
+            if (camera != null)
+                return (camera.CameraInfo.ZoomState.Value as IZoomState).MinZoomRatio;
+            else
+                return 1f;
+        }
+    }
+    public float MaxZoomFactor
+    {
+        get
+        {
+            if (camera != null)
+                return (camera.CameraInfo.ZoomState.Value as IZoomState).MaxZoomRatio;
+            else
+                return 1f;
+        }
+    }
 
-    private readonly List<CameraInfo> Cameras = new List<CameraInfo>();
+    private readonly List<CameraInfo> Cameras = new();
     private readonly CameraView cameraView;
-    private CameraManager manager;
+    private readonly PreviewView previewView;
+    private IExecutorService executorService;
+    private ImageAnalysis imageAnalyzer;
+    private ImageAnalyzer frameAnalyzer;
+    private ProcessCameraProvider cameraProvider;
+    private ICamera camera;
+    private Preview cameraPreview;
     private bool started = false;
-    private Handler childHandler, mainHandler;
-    private ImageView iv_show;
-    private ImageReader mImageReader;
-    private CameraCaptureSession mCameraCaptureSession;
-    private CameraStateCallback stateCallback;
-    private CameraDevice mCameraDevice;
-    private ImageAvailableListener imageAvailableListener;
-    private CaptureRequest.Builder previewRequestBuilder;
-    private CameraCaptureStateCallback previewStateCallback;
+    private PreviewView.ImplementationMode currentImplementationMode = PreviewView.ImplementationMode.Performance;
+    private int frames = 0;
+    private bool initiated = false;
 
     public MauiCameraView(Context context, CameraView cameraView) : base(context)
     {
         this.cameraView = cameraView;
-        iv_show = new ImageView(context);
-        iv_show.Visibility = ViewStates.Invisible;
+        previewView = new PreviewView(context);
+        previewView.SetScaleType(PreviewView.ScaleType.FillCenter);
+        AddView(previewView);
         InitDevices();
-        //Holder.SetKeepScreenOn(true);
     }
 
     private void InitDevices()
     {
-        manager = (CameraManager)Context.GetSystemService(Context.CameraService);
-        try
+        if (!initiated)
         {
+            try
+            {
+                var initCameraProvider = ProcessCameraProvider.GetInstance(Context);
+                cameraProvider = (ProcessCameraProvider)initCameraProvider.Get();
+                cameraPreview = new Preview.Builder().Build();
+                cameraPreview.SetSurfaceProvider(previewView.SurfaceProvider);
+                executorService = Executors.NewSingleThreadExecutor();
+                frameAnalyzer = new ImageAnalyzer();
+                frameAnalyzer.FrameReady += FrameAnalyzer_FrameReady;
+                imageAnalyzer = new ImageAnalysis.Builder().SetBackpressureStrategy(ImageAnalysis.StrategyKeepOnlyLatest).Build();
+                imageAnalyzer.SetAnalyzer(executorService, frameAnalyzer);
 
-            foreach (var camid in manager.GetCameraIdList())
-            {
-                var camProps = manager.GetCameraCharacteristics(camid);
-                var facing = (Integer)camProps.Get(CameraCharacteristics.LensFacing);
-                var map = (StreamConfigurationMap)camProps.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
-                if (map != null)
-                    Cameras.Add(new CameraInfo { Name = facing != null && facing == (Integer.ValueOf((int)LensFacing.Front)) ? "Front Camera" : "Back Camera", DeviceId = camid });
+                if (cameraProvider != null)
+                {
+                    if (cameraProvider.HasCamera(CameraSelector.DefaultBackCamera))
+                        Cameras.Add(new CameraInfo { Name = "Back Camera", DeviceId = "1" });
+                    if (cameraProvider.HasCamera(CameraSelector.DefaultFrontCamera))
+                        Cameras.Add(new CameraInfo { Name = "Front Camera", DeviceId = "2" });
+                    Camera = Cameras.FirstOrDefault();
+                    if (cameraView != null)
+                    {
+                        cameraView.Cameras.Clear();
+                        foreach (var cam in Cameras) cameraView.Cameras.Add(cam);
+                    }
+                }
+                initiated = true;
             }
-            Camera = Cameras.FirstOrDefault();
-            if (cameraView != null)
+            catch
             {
-                cameraView.Cameras.Clear();
-                foreach (var cam in Cameras) cameraView.Cameras.Add(cam);
             }
-        }
-        catch (System.Exception)
-        {
-            Camera = null;
         }
     }
+
     public async Task<CameraResult> StartCameraAsync()
     {
         CameraResult result = CameraResult.Success;
-        if (await RequestPermissions())
+        if (initiated)
         {
-            if (Camera != null)
+            previewView.LayoutParameters = new LayoutParams { Width = Width, Height = Height };
+            if (started) StopCamera();
+            if (await RequestPermissions())
             {
-                HandlerThread handlerThread = new HandlerThread("Camera2");
-                handlerThread.Start();
-                childHandler = new Handler(handlerThread.Looper);
-                mainHandler = new Handler(Looper.MainLooper);
-                mImageReader = ImageReader.NewInstance(1080, 1920, ImageFormatType.Jpeg, 1);
-                imageAvailableListener = new ImageAvailableListener(iv_show);
-                mImageReader.SetOnImageAvailableListener(imageAvailableListener, mainHandler);
-                stateCallback = new CameraStateCallback(this);
-                manager.OpenCamera(Camera.DeviceId, stateCallback, mainHandler);
-
-                started = true;
+                if (Camera != null && cameraProvider != null)
+                {
+                    try
+                    {
+                        if (previewView.ScaleX == -1)
+                            SetImplementationMode(PreviewView.ImplementationMode.Compatible);
+                        else
+                            SetImplementationMode(PreviewView.ImplementationMode.Performance);
+                        CameraSelector cameraSelector = Camera.DeviceId == "1" ? CameraSelector.DefaultBackCamera : CameraSelector.DefaultFrontCamera;
+                        frames = 0;
+                        
+                        if (Context is AndroidX.Lifecycle.ILifecycleOwner lifecycleOwner)
+                            camera = cameraProvider.BindToLifecycle(lifecycleOwner, cameraSelector, cameraPreview, imageAnalyzer);
+                        else if (Platform.CurrentActivity is AndroidX.Lifecycle.ILifecycleOwner maLifecycleOwner)
+                            camera = cameraProvider.BindToLifecycle(maLifecycleOwner, cameraSelector, cameraPreview, imageAnalyzer);
+                        
+                        UpdateTorch();
+                        UpdateMirroredImage();
+                        SetZoomFactor(cameraView.ZoomFactor);
+                        started = true;
+                    }
+                    catch
+                    {
+                        result = CameraResult.AccessError;
+                    }
+                }
+                else
+                    result = CameraResult.AccessError;
             }
-        }
-        else
-            result = CameraResult.AccessDenied;
+            else
+                result = CameraResult.AccessDenied;
+        }else
+            result = CameraResult.NotInitiated;
         return result;
     }
-    private void StartPreview()
-    {
-        try
-        {
-            // CaptureRequest.Builder
-            previewRequestBuilder = mCameraDevice.CreateCaptureRequest(CameraTemplate.Preview);
-            // surface of SurfaceView will be the object of CaptureRequest.Builder
-            previewRequestBuilder.AddTarget(Holder.Surface);
-            // Create CameraCaptureSession to take care of preview and photo shooting.
-            List<Surface> surfaces = new List<Surface>();
-            surfaces.Add(Holder.Surface);
-            surfaces.Add(mImageReader.Surface);
-            previewStateCallback = new CameraCaptureStateCallback(this);
-            //SessionConfiguration session=new SessionConfiguration()
-            mCameraDevice.CreateCaptureSession(surfaces, previewStateCallback, childHandler);
-        }
-        catch (CameraAccessException e)
-        {
-            e.PrintStackTrace();
-        }
-    }
-    public async Task<CameraResult> StopCameraAsync()
+    public CameraResult StopCamera()
     {
         CameraResult result = CameraResult.Success;
-
-        try
+        if (initiated)
         {
-
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    cameraProvider?.UnbindAll();
+                    camera?.Dispose();
+                }
+                catch (System.Exception)
+                {
+                    result = CameraResult.AccessError;
+                }
+            });
+            started = false;
         }
-        catch (System.Exception)
-        {
-            result = CameraResult.AccessError;
-        }
-        started = false;
-
+        else
+            result = CameraResult.NotInitiated;
         return result;
     }
-    private async Task<bool> RequestPermissions()
+    public void DisposeControl()
+    {
+        if (started) StopCamera();
+        cameraPreview?.Dispose();
+        executorService?.Shutdown();
+        executorService?.Dispose();
+        frameAnalyzer?.Dispose();
+        imageAnalyzer?.Dispose();
+        RemoveAllViews();
+        previewView?.Dispose();
+        Dispose();
+    }
+    private void ProccessQR()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            var bitmap = previewView.Bitmap;
+            Task.Run(() =>
+            {
+                cameraView.DecodeBarcode(bitmap);
+                bitmap.Dispose();
+                GC.Collect();
+            });
+        });
+    }
+    private void FrameAnalyzer_FrameReady(object sender, EventArgs e)
+    {
+        if (cameraView.BarCodeDetectionEnabled)
+        {
+            frames++;
+            if (frames >= cameraView.BarCodeDetectionFrameRate)
+            {
+                ProccessQR();
+                frames = 0;
+            }
+        }
+    }
+    public ImageSource GetSnapShot(ImageFormat imageFormat)
+    {
+        ImageSource result = null;
+
+        if (started)
+        {
+            Bitmap bitmap = null;
+            float scale = 1;
+            MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                bitmap = previewView.Bitmap;
+                scale = previewView.ScaleX;
+            }).Wait();
+            if (bitmap != null)
+            {
+                try
+                {
+                    if (scale == -1)
+                    {
+                        Matrix matrix = new();
+                        matrix.PreScale(-1, 1);
+                        bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, bitmap.Width, bitmap.Height, matrix, false);
+                    }
+
+                    var iformat = imageFormat switch
+                    {
+                        ImageFormat.JPEG => Bitmap.CompressFormat.Jpeg,
+                        _ => Bitmap.CompressFormat.Png
+                    };
+                    MemoryStream stream = new();
+                    bitmap.Compress(iformat, 100, stream);
+                    stream.Position = 0;
+                    result = ImageSource.FromStream(() => stream);
+                }
+                catch
+                {
+                }
+            }
+        }
+        GC.Collect();
+        return result;
+    }
+
+    public bool SaveSnapShot(ImageFormat imageFormat, string SnapFilePath)
+    {
+        bool result = true;
+
+        if (started)
+        {
+            Bitmap bitmap = null;
+            float scale = 1;
+            MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                bitmap = previewView.Bitmap;
+                scale = previewView.ScaleX;
+            }).Wait();
+            if (bitmap != null)
+            {
+                try
+                {
+                    if (File.Exists(SnapFilePath)) File.Delete(SnapFilePath);
+                    if (scale == -1)
+                    {
+                        Matrix matrix = new();
+                        matrix.PreScale(-1, 1);
+                        bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, bitmap.Width, bitmap.Height, matrix, false);
+                    }
+
+                    var iformat = imageFormat switch
+                    {
+                        ImageFormat.JPEG => Bitmap.CompressFormat.Jpeg,
+                        _ => Bitmap.CompressFormat.Png
+                    };
+                    using FileStream stream = new(SnapFilePath, FileMode.OpenOrCreate);
+                    bitmap.Compress(iformat, 80, stream);
+                    stream.Close();
+                }
+                catch (System.Exception)
+                {
+                    result = false;
+                }
+            }
+        }else
+            result = false;
+
+        GC.Collect();
+        return result;
+    }
+    private static async Task<bool> RequestPermissions()
     {
         var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
         if (status != PermissionStatus.Granted)
@@ -149,82 +294,93 @@ internal class MauiCameraView : SurfaceView
         }
         return true;
     }
-    class ImageAvailableListener : Java.Lang.Object, IOnImageAvailableListener
+    public async void UpdateCamera()
     {
-        private ImageView iv_show;
-        public ImageAvailableListener(ImageView iv_show)
+        if (cameraView != null && cameraView.Camera != null)
         {
-            this.iv_show = iv_show;
+            if (started) StopCamera();
+            Camera = cameraView.Camera;
+            if (started) await StartCameraAsync();
         }
-        public void OnImageAvailable(ImageReader reader)
+    }
+    public void UpdateMirroredImage()
+    {
+        if (cameraView != null)
         {
-            var image = reader.AcquireNextImage();
-            ByteBuffer buffer = image.GetPlanes()[0].Buffer;
-            byte[] bytes = new byte[buffer.Remaining()];
-            buffer.Get(bytes);
-            Bitmap bitmap = BitmapFactory.DecodeByteArray(bytes, 0, bytes.Length);
-            if (bitmap != null)
+            if (cameraView.MirroredImage)
             {
-                iv_show.SetImageBitmap(bitmap);
+                previewView.ScaleX = -1;
+                SetImplementationMode(PreviewView.ImplementationMode.Compatible);
+            }
+            else
+            {
+                previewView.ScaleX = 1;
             }
         }
     }
-    class CameraStateCallback : CameraDevice.StateCallback
+    public void UpdateTorch()
     {
-        private MauiCameraView mainView;
-
-        public CameraStateCallback(MauiCameraView mainView)
+        if (camera != null && cameraView != null)
         {
-            this.mainView = mainView;
-        }
-        public override void OnDisconnected(CameraDevice camera)
-        {
-            if (mainView.mCameraDevice != null) 
-            {
-                mainView.mCameraDevice.Close();
-                mainView.mCameraDevice = null;
-            }
-        }
-        public override void OnError(CameraDevice camera, [GeneratedEnum] CameraError error)
-        {
-        }
-        public override void OnOpened(CameraDevice camera)
-        {
-            mainView.mCameraDevice = camera;
-            mainView.StartPreview();
+            if (camera.CameraInfo.HasFlashUnit)
+                camera.CameraControl.EnableTorch(cameraView.TorchEnabled);
         }
     }
-    class CameraCaptureStateCallback : CameraCaptureSession.StateCallback
-    {
-        private MauiCameraView mainView;
 
-        public CameraCaptureStateCallback(MauiCameraView mainView)
+    public void UpdateFlashMode()
+    {
+        if (camera != null && cameraView != null)
         {
-            this.mainView = mainView;
-        }
-        public override void OnConfigured(CameraCaptureSession session)
-        {
-            if (mainView.mCameraDevice == null) return;
-            // Begin to preview
-            mainView.mCameraCaptureSession = session;
             try
             {
-                // Turn on Auto Focus
-                mainView.previewRequestBuilder.Set(CaptureRequest.ControlAfMode, (int)ControlAFMode.ContinuousPicture);
-                // Turn on Flash
-                mainView.previewRequestBuilder.Set(CaptureRequest.ControlAeMode, (int)ControlAEMode.OnAutoFlash);
-                // Show up
-                CaptureRequest previewRequest = mainView.previewRequestBuilder.Build();
-                mainView.mCameraCaptureSession.SetRepeatingRequest(previewRequest, null, mainView.childHandler);
+                if (camera.CameraInfo.HasFlashUnit)
+                {
+                    switch (cameraView.FlashMode)
+                    {
+                        case FlashMode.Auto:
+                            camera.CameraControl.EnableTorch(true);
+                            break;
+                        case FlashMode.Enabled:
+                            camera.CameraControl.EnableTorch(true);
+                            break;
+                        case FlashMode.Disabled:
+                            camera.CameraControl.EnableTorch(false);
+                            break;
+                    }
+                }
             }
-            catch (CameraAccessException e)
+            catch (System.Exception)
             {
-                e.PrintStackTrace();
             }
         }
+    }
+    public void SetZoomFactor(float zoom)
+    {
+        if (camera != null)
+            camera.CameraControl.SetZoomRatio(Math.Max(MinZoomFactor, Math.Min(zoom, MaxZoomFactor)));
+    }
+    private async void SetImplementationMode(PreviewView.ImplementationMode mode)
+    {
 
-        public override void OnConfigureFailed(CameraCaptureSession session)
+        if (started && currentImplementationMode != mode)
         {
+            StopCamera();
+            previewView.SetImplementationMode(mode);
+            await StartCameraAsync();
+        }else
+            previewView.SetImplementationMode(mode);
+
+        currentImplementationMode = mode;
+    }
+    class ImageAnalyzer : Java.Lang.Object, ImageAnalysis.IAnalyzer
+    {
+        public IImageProxy Image { get; private set; }
+        public event EventHandler FrameReady;
+        public void Analyze(IImageProxy image)
+        {
+            Image = image;
+            FrameReady?.Invoke(this, EventArgs.Empty);
+            image.Close();
         }
     }
 }
