@@ -170,3 +170,7 @@ Use the control and its bindable properties:
                  BarcodeBackground="White" BarcodeForeground="Blue"
                  BarcodeFormat="QR_CODE" />
 ```
+Set the barcode property to generate the image:
+```csharp
+barcodeImage.Barcode = "https://github.com/hjam40/Camera.MAUI";
+```
