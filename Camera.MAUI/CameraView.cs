@@ -20,7 +20,7 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty FlashModeProperty = BindableProperty.Create(nameof(FlashMode), typeof(FlashMode), typeof(CameraView), FlashMode.Disabled);
     public static readonly BindableProperty TorchEnabledProperty = BindableProperty.Create(nameof(TorchEnabled), typeof(bool), typeof(CameraView), false);
     public static readonly BindableProperty CamerasProperty = BindableProperty.Create(nameof(Cameras), typeof(ObservableCollection<CameraInfo>), typeof(CameraView), new ObservableCollection<CameraInfo>());
-    public static readonly BindableProperty CameraProperty = BindableProperty.Create(nameof(Camera), typeof(CameraInfo), typeof(CameraView), null);
+    public static readonly BindableProperty CameraProperty = BindableProperty.Create(nameof(Camera), typeof(CameraInfo), typeof(CameraView), null, propertyChanged:CameraChanged);
     public static readonly BindableProperty MirroredImageProperty = BindableProperty.Create(nameof(MirroredImage), typeof(bool), typeof(CameraView), false);
     public static readonly BindableProperty BarCodeDetectionEnabledProperty = BindableProperty.Create(nameof(BarCodeDetectionEnabled), typeof(bool), typeof(CameraView), false);
     public static readonly BindableProperty BarCodeDetectionFrameRateProperty = BindableProperty.Create(nameof(BarCodeDetectionFrameRate), typeof(int), typeof(CameraView), 10);
@@ -99,27 +99,27 @@ public class CameraView : View, ICameraView
         set { SetValue(ZoomFactorProperty, value); }
     }
     /// <summary>
-    /// Indicates the minimum zoom factor for the camera in use. This property is refreshed when the camera starts.
+    /// Indicates the minimum zoom factor for the camera in use. This property is refreshed when the "Camera" property change.
     /// </summary>
     public float MinZoomFactor
     {
         get
         {
-            if (Handler != null && Handler is CameraViewHandler handler)
-                return handler.GetMinZoomFactor();
+            if (Camera != null)
+                return Camera.MinZoomFactor;
             else
                 return 1f;
         }
     }
     /// <summary>
-    /// Indicates the maximum zoom factor for the camera in use. This property is refreshed when the camera starts.
+    /// Indicates the maximum zoom factor for the camera in use. This property is refreshed when the "Camera" property change.
     /// </summary>
     public float MaxZoomFactor
     {
         get
         {
-            if (Handler != null && Handler is CameraViewHandler handler)
-                return handler.GetMaxZoomFactor();
+            if (Camera != null)
+                return Camera.MaxZoomFactor;
             else
                 return 1f;
         }
@@ -173,6 +173,14 @@ public class CameraView : View, ICameraView
             }
         }
         catch {}
+    }
+    private static void CameraChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (newValue != null && oldValue != newValue && bindable is CameraView cameraView && newValue is CameraInfo cam)
+        {
+            cameraView.OnPropertyChanged(nameof(MinZoomFactor));
+            cameraView.OnPropertyChanged(nameof(MaxZoomFactor));
+        }
     }
 
     private static void BarCodeOptionsChanged(BindableObject bindable, object oldValue, object newValue)

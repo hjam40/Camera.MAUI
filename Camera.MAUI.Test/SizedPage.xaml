@@ -10,20 +10,18 @@
                 <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="200"/>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
                     <Label x:Name="cameraLabel" Text="Select a camera:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black"/>
-                    <Picker x:Name="cameraPicker" VerticalOptions="Center" TextColor="Black"/>
+                    <Picker x:Name="cameraPicker" VerticalOptions="Center" TextColor="Black" SelectedIndexChanged="cameraPicker_SelectedIndexChanged"/>
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center">
                     <Label Text="Mirrored" VerticalOptions="Center" TextColor="Black"/>
                     <CheckBox CheckedChanged="CheckBox_CheckedChanged" VerticalOptions="Center" Color="Black"/>
-                    <Label Text="Torch" VerticalOptions="Center" TextColor="Black"/>
-                    <CheckBox CheckedChanged="CheckBox4_CheckedChanged" VerticalOptions="Center" Color="Black"/>
-                    <Label Text="Flash Auto" VerticalOptions="Center" TextColor="Black"/>
-                    <CheckBox CheckedChanged="CheckBox2_CheckedChanged" VerticalOptions="Center" Color="Black"/>
+                    <Label x:Name="torchLabel" Text="Torch" VerticalOptions="Center" TextColor="Black"/>
+                    <CheckBox x:Name="torchCheck" CheckedChanged="CheckBox4_CheckedChanged" VerticalOptions="Center" Color="Black"/>
                     <Label Text="QR Detec." VerticalOptions="Center" TextColor="Black"/>
                     <CheckBox CheckedChanged="CheckBox3_CheckedChanged" VerticalOptions="Center" Color="Black"/>
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="2" Spacing="2">
-                    <Label Text="Zoom" VerticalOptions="Center" TextColor="Black"/>
+                    <Label x:Name="zoomLabel" Text="Zoom" VerticalOptions="Center" TextColor="Black"/>
                     <Stepper x:Name="zoomStepper" BindingContext="{x:Reference cameraView}" Minimum="{Binding MinZoomFactor}" Maximum="1.1" Increment="0.5" Value="1" ValueChanged="Stepper_ValueChanged"/>
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">

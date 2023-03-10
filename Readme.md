@@ -98,6 +98,16 @@ Configure the camera to use:
         }
     }
 ```
+CameraInfo type (Camera Property):
+CameraInfo has the next properties:
+```csharp
+    public string Name
+    public string DeviceId
+    public CameraPosition Position
+    public bool HasFlashUnit
+    public float MinZoomFactor
+    public float MaxZoomFactor
+```
 Start camera playback:
 ```csharp
          if (await cameraView.StartCameraAsync() == CameraResult.Success)

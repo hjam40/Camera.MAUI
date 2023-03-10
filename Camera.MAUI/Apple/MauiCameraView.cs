@@ -7,6 +7,7 @@ using CoreImage;
 using CoreMedia;
 using CoreVideo;
 using Foundation;
+using System.Dynamic;
 using UIKit;
 
 namespace Camera.MAUI.Platforms.Apple;
@@ -88,7 +89,13 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         AVCaptureDevicePosition.Front => CameraPosition.Front,
                         _ => CameraPosition.Unknow
                     };
-                    Cameras.Add(new CameraInfo { Name = device.LocalizedName, DeviceId = device.UniqueID, Position = position });
+                    Cameras.Add(new CameraInfo 
+                    { 
+                        Name = device.LocalizedName, DeviceId = device.UniqueID, Position = position,
+                        HasFlashUnit = device.FlashAvailable,
+                        MinZoomFactor = (float)device.MinAvailableVideoZoomFactor,
+                        MaxZoomFactor = (float)device.MaxAvailableVideoZoomFactor
+                    });
                 }
                 Camera = Cameras.FirstOrDefault();
                 if (cameraView != null)

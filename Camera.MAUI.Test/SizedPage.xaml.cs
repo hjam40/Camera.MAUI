@@ -28,7 +28,6 @@ public partial class SizedPage : ContentPage
     {
         cameraPicker.ItemsSource = cameraView.Cameras;
         cameraPicker.SelectedIndex = 0;
-        if (cameraView.MaxZoomFactor > 1) zoomStepper.Maximum = cameraView.MaxZoomFactor;
     }
 
     private async void OnStartClicked(object sender, EventArgs e)
@@ -38,7 +37,6 @@ public partial class SizedPage : ContentPage
             cameraLabel.BackgroundColor = Colors.White;
             cameraView.Camera = camera;
             var result = await cameraView.StartCameraAsync();
-            if (cameraView.MaxZoomFactor > 1) zoomStepper.Maximum = cameraView.MaxZoomFactor;
             Debug.WriteLine("Start camera result " + result);
         }
         else
@@ -62,10 +60,6 @@ public partial class SizedPage : ContentPage
     {
         cameraView.MirroredImage = e.Value;
     }
-    private void CheckBox2_CheckedChanged(object sender, CheckedChangedEventArgs e)
-    {
-        cameraView.FlashMode = e.Value ? FlashMode.Auto : FlashMode.Disabled;
-    }
     private void CheckBox4_CheckedChanged(object sender, CheckedChangedEventArgs e)
     {
         cameraView.TorchEnabled = e.Value;
@@ -78,5 +72,19 @@ public partial class SizedPage : ContentPage
     private void Stepper_ValueChanged(object sender, ValueChangedEventArgs e)
     {
         if (cameraView != null) cameraView.ZoomFactor = (float)e.NewValue;
+    }
+
+    private void cameraPicker_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (cameraPicker.SelectedItem != null && cameraPicker.SelectedItem is CameraInfo camera)
+        {
+            torchLabel.IsEnabled = torchCheck.IsEnabled = camera.HasFlashUnit;
+            if (camera.MaxZoomFactor > 1)
+            {
+                zoomLabel.IsEnabled = zoomStepper.IsEnabled = true;
+                zoomStepper.Maximum = camera.MaxZoomFactor;
+            }else
+                zoomLabel.IsEnabled = zoomStepper.IsEnabled = true;
+        }
     }
 }

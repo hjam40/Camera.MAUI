@@ -5,6 +5,10 @@ using AndroidX.Camera.Lifecycle;
 using AndroidX.Camera.Core;
 using Java.Util.Concurrent;
 using Android.Graphics;
+using AndroidX.Camera.Core.Impl;
+using AndroidX.Camera.Camera2.InterOp;
+using CameraCharacteristics = Android.Hardware.Camera2.CameraCharacteristics;
+using Android.Hardware.Camera2;
 
 namespace Camera.MAUI.Platforms.Android;
 
@@ -31,8 +35,13 @@ internal class MauiCameraView: GridLayout
                 return 1f;
         }
     }
-
+    private record InternalCameraInfo
+    {
+        public CameraSelector CameraSelector { get; set; }
+        public string CameraId { get; set; }
+    }
     private readonly List<CameraInfo> Cameras = new();
+    private readonly List<InternalCameraInfo> InternalCameras = new();
     private readonly CameraView cameraView;
     private readonly PreviewView previewView;
     private IExecutorService executorService;
@@ -73,10 +82,37 @@ internal class MauiCameraView: GridLayout
 
                 if (cameraProvider != null)
                 {
-                    if (cameraProvider.HasCamera(CameraSelector.DefaultBackCamera))
-                        Cameras.Add(new CameraInfo { Name = "Back Camera", DeviceId = "1", Position = CameraPosition.Back });
-                    if (cameraProvider.HasCamera(CameraSelector.DefaultFrontCamera))
-                        Cameras.Add(new CameraInfo { Name = "Front Camera", DeviceId = "2", Position = CameraPosition.Front });
+                    foreach (var camInfo in cameraProvider.AvailableCameraInfos)
+                    {
+                        var c2cInfo = Camera2CameraInfo.From(camInfo);
+                        if ((int)(c2cInfo.GetCameraCharacteristic(CameraCharacteristics.LensFacing) as Java.Lang.Number) == (int)LensFacing.Back)
+                            Cameras.Add(new CameraInfo 
+                            { 
+                                Name = "Back Camera", DeviceId = c2cInfo.CameraId, Position = CameraPosition.Back,
+                                HasFlashUnit = camInfo.HasFlashUnit,
+                                MinZoomFactor = (camInfo.ZoomState.Value as IZoomState).MinZoomRatio,
+                                MaxZoomFactor = (camInfo.ZoomState.Value as IZoomState).MaxZoomRatio
+                            });
+                        else if ((int)(c2cInfo.GetCameraCharacteristic(CameraCharacteristics.LensFacing) as Java.Lang.Number) == (int)LensFacing.Front)
+                            Cameras.Add(new CameraInfo 
+                            { 
+                                Name = "Front Camera", DeviceId = c2cInfo.CameraId, Position = CameraPosition.Front,
+                                HasFlashUnit = camInfo.HasFlashUnit,
+                                MinZoomFactor = (camInfo.ZoomState.Value as IZoomState).MinZoomRatio,
+                                MaxZoomFactor = (camInfo.ZoomState.Value as IZoomState).MaxZoomRatio
+                            });
+                        else
+                        {
+                            Cameras.Add(new CameraInfo 
+                            {
+                                Name = "Camera " + c2cInfo.CameraId, DeviceId = c2cInfo.CameraId, Position = CameraPosition.Unknow,
+                                HasFlashUnit = camInfo.HasFlashUnit,
+                                MinZoomFactor = (camInfo.ZoomState.Value as IZoomState).MinZoomRatio,
+                                MaxZoomFactor = (camInfo.ZoomState.Value as IZoomState).MaxZoomRatio
+                            });
+                        }
+                        InternalCameras.Add(new InternalCameraInfo { CameraSelector = camInfo.CameraSelector, CameraId = c2cInfo.CameraId });
+                    }
                     Camera = Cameras.FirstOrDefault();
                     if (cameraView != null)
                     {
@@ -109,7 +145,7 @@ internal class MauiCameraView: GridLayout
                             SetImplementationMode(PreviewView.ImplementationMode.Compatible);
                         else
                             SetImplementationMode(PreviewView.ImplementationMode.Performance);
-                        CameraSelector cameraSelector = Camera.DeviceId == "1" ? CameraSelector.DefaultBackCamera : CameraSelector.DefaultFrontCamera;
+                        CameraSelector cameraSelector = InternalCameras.First(c => c.CameraId == Camera.DeviceId).CameraSelector;
                         frames = 0;
                         
                         if (Context is AndroidX.Lifecycle.ILifecycleOwner lifecycleOwner)

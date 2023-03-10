@@ -5,6 +5,7 @@ using Windows.Devices.Enumeration;
 using Windows.Media.Core;
 using Windows.Graphics.Imaging;
 using Windows.Media.Devices;
+using Panel = Windows.Devices.Enumeration.Panel;
 
 namespace Camera.MAUI.Platforms.Windows;
 
@@ -124,7 +125,38 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                                                                                     (s.MediaStreamType == MediaStreamType.VideoPreview || s.MediaStreamType == MediaStreamType.VideoRecord))
                                                                                     && g.SourceInfos.All(sourceInfo => vDevices.Any(vd => vd.Id == sourceInfo.DeviceInformation.Id))).ToList();
                 foreach (var s in sGroups)
-                    Cameras.Add(new CameraInfo { Name = s.DisplayName, DeviceId = s.Id, Position = CameraPosition.Unknow });
+                {
+                    CameraPosition position = CameraPosition.Unknow;
+                    var device = vDevices.FirstOrDefault(vd => vd.Id == s.Id);
+                    if (device != null)
+                    {
+                        if (device.EnclosureLocation != null)
+                            position = device.EnclosureLocation.Panel switch
+                            {
+                                Panel.Front => CameraPosition.Front,
+                                Panel.Back => CameraPosition.Back,
+                                _ => CameraPosition.Unknow
+                            };
+                    }
+                    mediaCapture = new MediaCapture();
+                    mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
+                    {
+                        SourceGroup = s,
+                        MemoryPreference = MediaCaptureMemoryPreference.Cpu,
+                        StreamingCaptureMode = StreamingCaptureMode.Video
+                    }).GetAwaiter().GetResult();
+                    frameSource = mediaCapture.FrameSources.FirstOrDefault(source => source.Value.Info.MediaStreamType == MediaStreamType.VideoRecord
+                                                                                          && source.Value.Info.SourceKind == MediaFrameSourceKind.Color).Value;
+                    Cameras.Add(new CameraInfo
+                    {
+                        Name = s.DisplayName,
+                        DeviceId = s.Id,
+                        Position = position,
+                        HasFlashUnit = frameSource.Controller.VideoDeviceController.FlashControl.Supported,
+                        MinZoomFactor = frameSource.Controller.VideoDeviceController.ZoomControl.Supported ? frameSource.Controller.VideoDeviceController.ZoomControl.Min : 1f,
+                        MaxZoomFactor = frameSource.Controller.VideoDeviceController.ZoomControl.Supported ? frameSource.Controller.VideoDeviceController.ZoomControl.Max : 1f
+                    });
+                }
 
                 Camera = Cameras.FirstOrDefault();
                 if (cameraView != null)
