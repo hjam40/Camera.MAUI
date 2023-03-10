@@ -124,7 +124,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                                                                                     (s.MediaStreamType == MediaStreamType.VideoPreview || s.MediaStreamType == MediaStreamType.VideoRecord))
                                                                                     && g.SourceInfos.All(sourceInfo => vDevices.Any(vd => vd.Id == sourceInfo.DeviceInformation.Id))).ToList();
                 foreach (var s in sGroups)
-                    Cameras.Add(new CameraInfo { Name = s.DisplayName, DeviceId = s.Id });
+                    Cameras.Add(new CameraInfo { Name = s.DisplayName, DeviceId = s.Id, Position = CameraPosition.Unknow });
 
                 Camera = Cameras.FirstOrDefault();
                 if (cameraView != null)

@@ -74,9 +74,9 @@ internal class MauiCameraView: GridLayout
                 if (cameraProvider != null)
                 {
                     if (cameraProvider.HasCamera(CameraSelector.DefaultBackCamera))
-                        Cameras.Add(new CameraInfo { Name = "Back Camera", DeviceId = "1" });
+                        Cameras.Add(new CameraInfo { Name = "Back Camera", DeviceId = "1", Position = CameraPosition.Back });
                     if (cameraProvider.HasCamera(CameraSelector.DefaultFrontCamera))
-                        Cameras.Add(new CameraInfo { Name = "Front Camera", DeviceId = "2" });
+                        Cameras.Add(new CameraInfo { Name = "Front Camera", DeviceId = "2", Position = CameraPosition.Front });
                     Camera = Cameras.FirstOrDefault();
                     if (cameraView != null)
                     {
