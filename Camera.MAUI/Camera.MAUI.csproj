@@ -50,7 +50,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Include="..\..\Users\Hector\Pictures\camera.maui.png">
+	  <None Include="camera.maui.png">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
