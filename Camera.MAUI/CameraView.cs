@@ -176,7 +176,7 @@ public class CameraView : View, ICameraView
         set { SetValue(TakeAutoSnapShotProperty, value); }
     }
     /// <summary>
-    /// Change from false to true refresh SnapShot property
+    /// If true SnapShot property is refreshed according to the frequency set in the AutoSnapShotSeconds property
     /// </summary>
     public bool AutoSnapShotAsImageSource
     {

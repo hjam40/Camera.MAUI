@@ -165,7 +165,7 @@ The control has several binding properties for take an snapshot:
     /// Change from false to true refresh SnapShot property
     public bool TakeAutoSnapShot
     
-    /// Change from false to true refresh SnapShot property
+    /// If true SnapShot property is refreshed according to the frequency set in the AutoSnapShotSeconds property
     public bool AutoSnapShotAsImageSource
 ```
 
