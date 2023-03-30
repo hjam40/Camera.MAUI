@@ -25,6 +25,7 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty BarCodeDetectionEnabledProperty = BindableProperty.Create(nameof(BarCodeDetectionEnabled), typeof(bool), typeof(CameraView), false);
     public static readonly BindableProperty BarCodeDetectionFrameRateProperty = BindableProperty.Create(nameof(BarCodeDetectionFrameRate), typeof(int), typeof(CameraView), 10);
     public static readonly BindableProperty BarCodeOptionsProperty = BindableProperty.Create(nameof(BarCodeOptions), typeof(BarcodeDecodeOptions), typeof(CameraView), new BarcodeDecodeOptions(), propertyChanged:BarCodeOptionsChanged);
+    public static readonly BindableProperty BarCodeResultsProperty = BindableProperty.Create(nameof(BarCodeResults), typeof(Result[]), typeof(CameraView), null, BindingMode.OneWayToSource);
     public static readonly BindableProperty ZoomFactorProperty = BindableProperty.Create(nameof(ZoomFactor), typeof(float), typeof(CameraView), 1f);
     public static readonly BindableProperty AutoSnapShotSecondsProperty = BindableProperty.Create(nameof(AutoSnapShotSeconds), typeof(float), typeof(CameraView), 0f);
     public static readonly BindableProperty AutoSnapShotFormatProperty = BindableProperty.Create(nameof(AutoSnapShotFormat), typeof(ImageFormat), typeof(CameraView), ImageFormat.PNG);
@@ -96,6 +97,14 @@ public class CameraView : View, ICameraView
     {
         get { return (BarcodeDecodeOptions)GetValue(BarCodeOptionsProperty); }
         set { SetValue(BarCodeOptionsProperty, value); }
+    }
+    /// <summary>
+    /// It refresh each time a barcode is detected if BarCodeDetectionEnabled porperty is true
+    /// </summary>
+    public Result[] BarCodeResults
+    {
+        get { return (Result[])GetValue(BarCodeResultsProperty); }
+        set { SetValue(BarCodeResultsProperty, value); }
     }
     /// <summary>
     /// The zoom factor for the current camera in use. This is a bindable property.
@@ -238,6 +247,8 @@ public class CameraView : View, ICameraView
             }
             if (results?.Length > 0)
             {
+                BarCodeResults = results;
+                OnPropertyChanged(nameof(BarCodeResults));
                 BarcodeDetected?.Invoke(this, new BarcodeEventArgs { Result = results });
             }
         }

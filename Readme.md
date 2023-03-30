@@ -1,3 +1,4 @@
+
 # Camera.MAUI
 
 A Camera View control and a Barcode Endode/Decode control (based on ZXing.Net) for .NET MAUI applications.
@@ -187,6 +188,13 @@ Enable and Handle barcodes detection:
     {
         Debug.WriteLine("BarcodeText=" + args.Result[0].Text);
     }
+```
+Use the event or the bindable property BarCodeResults
+```csharp
+    /// Event launched every time a code is detected in the image if "BarCodeDetectionEnabled" is set to true.
+    public event BarcodeResultHandler BarcodeDetected;
+    /// It refresh each time a barcode is detected if BarCodeDetectionEnabled porperty is true
+    public Result[] BarCodeResults
 ```
 
 ## BarcodeImage

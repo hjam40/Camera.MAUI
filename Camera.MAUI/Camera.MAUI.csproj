@@ -29,7 +29,7 @@
 		<Authors>hjam40</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<Version>1.2.0</Version>
+		<Version>1.2.1</Version>
 		<PackageReleaseNotes>Added MVVM snapshot properties</PackageReleaseNotes>
 	</PropertyGroup>
 
