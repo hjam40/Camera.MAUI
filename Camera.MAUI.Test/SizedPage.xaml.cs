@@ -1,9 +1,27 @@
 using System.Diagnostics;
+using ZXing.QrCode.Internal;
 
 namespace Camera.MAUI.Test;
 
 public partial class SizedPage : ContentPage
 {
+    public static readonly BindableProperty StreamProperty = BindableProperty.Create(nameof(Stream), typeof(Stream), typeof(SizedPage), null, propertyChanged: SetStream);
+
+    private static void SetStream(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (newValue != oldValue && newValue is Stream str)
+        {
+            var control = bindable as SizedPage;
+            str.Position = 0;
+            control.snapPreview.RemoveBinding(Image.SourceProperty);
+            control.snapPreview.Source = ImageSource.FromStream(() => str);
+        }
+    }
+    public string BarcodeText { get; set; } = "No barcode detected";
+    public Stream Stream {
+        get { return (Stream)GetValue(StreamProperty); }
+        set { SetValue(StreamProperty, value); } 
+    }
 	public SizedPage()
 	{
 		InitializeComponent();
@@ -17,10 +35,14 @@ public partial class SizedPage : ContentPage
             TryHarder = true,
             TryInverted = true
         };
+        BindingContext = cameraView;
+        //this.SetBinding(StreamProperty, nameof(cameraView.SnapShotStream));
     }
 
     private void CameraView_BarcodeDetected(object sender, ZXingHelper.BarcodeEventArgs args)
     {
+        BarcodeText = "Barcode: " + args.Result[0].Text;
+        OnPropertyChanged(nameof(BarcodeText));
         Debug.WriteLine("BarcodeText=" + args.Result[0].Text);
     }
 
@@ -74,7 +96,7 @@ public partial class SizedPage : ContentPage
         if (cameraView != null) cameraView.ZoomFactor = (float)e.NewValue;
     }
 
-    private void cameraPicker_SelectedIndexChanged(object sender, EventArgs e)
+    private void CameraPicker_SelectedIndexChanged(object sender, EventArgs e)
     {
         if (cameraPicker.SelectedItem != null && cameraPicker.SelectedItem is CameraInfo camera)
         {
@@ -86,5 +108,26 @@ public partial class SizedPage : ContentPage
             }else
                 zoomLabel.IsEnabled = zoomStepper.IsEnabled = true;
         }
+    }
+
+    private void Entry_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (float.TryParse(e.NewTextValue, out float value))
+        {
+            cameraView.AutoSnapShotSeconds = value;
+            if (value <= 0)
+                snapPreview.RemoveBinding(Image.SourceProperty);
+            else
+                snapPreview.SetBinding(Image.SourceProperty, nameof(cameraView.SnapShot));
+        }
+    }
+
+    private void CheckBox_CheckedChanged_1(object sender, CheckedChangedEventArgs e)
+    {
+        if (e.Value && cameraView.AutoSnapShotSeconds <= 0 || !cameraView.AutoSnapShotAsImageSource)
+            snapPreview.SetBinding(Image.SourceProperty, nameof(cameraView.SnapShot));
+        else if (cameraView.AutoSnapShotSeconds <= 0)
+            snapPreview.RemoveBinding(Image.SourceProperty);
+        cameraView.TakeAutoSnapShot = e.Value;
     }
 }

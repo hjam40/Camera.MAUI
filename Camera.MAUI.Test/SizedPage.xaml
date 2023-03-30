@@ -3,14 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Camera.MAUI.Test.SizedPage"
              xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"
-             Title="SizedPage" Background="white">
+             Title="SizedPage" Background="white" x:Name="sizedPage">
     <ScrollView>
         <Grid>
             <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
                 <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="200"/>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
                     <Label x:Name="cameraLabel" Text="Select a camera:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black"/>
-                    <Picker x:Name="cameraPicker" VerticalOptions="Center" TextColor="Black" SelectedIndexChanged="cameraPicker_SelectedIndexChanged"/>
+                    <Picker x:Name="cameraPicker" VerticalOptions="Center" TextColor="Black" SelectedIndexChanged="CameraPicker_SelectedIndexChanged"/>
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center">
                     <Label Text="Mirrored" VerticalOptions="Center" TextColor="Black"/>
@@ -19,6 +19,14 @@
                     <CheckBox x:Name="torchCheck" CheckedChanged="CheckBox4_CheckedChanged" VerticalOptions="Center" Color="Black"/>
                     <Label Text="QR Detec." VerticalOptions="Center" TextColor="Black"/>
                     <CheckBox CheckedChanged="CheckBox3_CheckedChanged" VerticalOptions="Center" Color="Black"/>
+                </HorizontalStackLayout>
+                <HorizontalStackLayout HorizontalOptions="Center">
+                    <Label Text="AutoSnap freq: " VerticalOptions="Center" TextColor="Black"/>
+                    <Entry WidthRequest="20" TextChanged="Entry_TextChanged" Keyboard="Numeric" TextColor="Black" />
+                    <Label Text="Take Autosnap" VerticalOptions="Center" TextColor="Black"/>
+                    <CheckBox CheckedChanged="CheckBox_CheckedChanged_1" VerticalOptions="Center" Color="Black"/>
+                    <Label Text="As ISource" VerticalOptions="Center" TextColor="Black"/>
+                    <CheckBox BindingContext="{x:Reference cameraView}" IsChecked="{Binding AutoSnapShotAsImageSource}" VerticalOptions="Center" Color="Black"/>
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="2" Spacing="2">
                     <Label x:Name="zoomLabel" Text="Zoom" VerticalOptions="Center" TextColor="Black"/>
@@ -29,11 +37,12 @@
                     <Button Text="Stop Camera" Clicked="OnStopClicked" />
                     <Button Text="Take Photo" Clicked="OnSnapClicked" />
                 </HorizontalStackLayout>
-                <Image x:Name="snapPreview"
+                <Label BindingContext="{x:Reference sizedPage}" Text="{Binding BarcodeText}" TextColor="Black" FontAttributes="Bold" HorizontalOptions="Center" />
+                <Image x:Name="snapPreview" BindingContext="{x:Reference cameraView}"
                 Aspect="AspectFit"
                 Source="dotnet_bot.png"
-                WidthRequest="300"
-                HeightRequest="200"
+                WidthRequest="250"
+                HeightRequest="100"
                 HorizontalOptions="Center" />
             </VerticalStackLayout>
         </Grid>

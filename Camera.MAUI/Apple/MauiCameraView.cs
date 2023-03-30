@@ -41,6 +41,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     private readonly DispatchQueue cameraDispacher;
     private int frames = 0;
     private bool initiated = false;
+    private bool snapping = false;
 
     public MauiCameraView(CameraView cameraView)
     {
@@ -263,14 +264,15 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             }
         }
     }
-    public ImageSource GetSnapShot(ImageFormat imageFormat)
+    public ImageSource GetSnapShot(ImageFormat imageFormat, bool auto = false)
     {
         ImageSource result = null;
 
-        if (started && lastCapture != null)
+        if (started && lastCapture != null && !snapping)
         {
-            MainThread.BeginInvokeOnMainThread(() =>
+            MainThread.InvokeOnMainThreadAsync(() =>
             {
+                snapping = true;
                 try
                 {
                     lock (lockCapture)
@@ -297,13 +299,22 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                                 break;
                         }
                         stream.Position = 0;
-                        result = ImageSource.FromStream(() => stream);
+                        if (auto)
+                        {
+                            if (cameraView.AutoSnapShotAsImageSource)
+                                result = ImageSource.FromStream(() => stream);
+                            cameraView.SnapShotStream?.Dispose();
+                            cameraView.SnapShotStream = stream;
+                        }
+                        else
+                            result = ImageSource.FromStream(() => stream);
                     }
                 }
                 catch
                 {
                 }
-            });
+                snapping = false;
+            }).Wait();
         }
 
         return result;
@@ -315,7 +326,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         if (started && lastCapture != null)
         {
             if (File.Exists(SnapFilePath)) File.Delete(SnapFilePath);
-            MainThread.BeginInvokeOnMainThread(() =>
+            MainThread.InvokeOnMainThreadAsync(() =>
             {
                 try
                 {
@@ -347,7 +358,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                 {
                     result = false;
                 }
-            });
+            }).Wait();
         }
         else
             result = false;
@@ -416,7 +427,9 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                 lastCapture?.Dispose();
                 lastCapture = capture;
             }
-            if (cameraView.BarCodeDetectionEnabled && currentFrames >= cameraView.BarCodeDetectionFrameRate)
+            if (!snapping && cameraView != null && cameraView.AutoSnapShotSeconds > 0 && (DateTime.Now - cameraView.lastSnapshot).TotalSeconds >= cameraView.AutoSnapShotSeconds)
+                cameraView.RefreshSnapshot(GetSnapShot(cameraView.AutoSnapShotFormat, true));
+            else if (cameraView.BarCodeDetectionEnabled && currentFrames >= cameraView.BarCodeDetectionFrameRate)
                 ProccessQR();
         }).Start();
     }

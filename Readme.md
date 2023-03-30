@@ -143,6 +143,31 @@ Get a snapshot from the playback
 ```csharp
 ImageSource imageSource = cameraView.GetSnapShot(ImageFormat.PNG);
 ```
+Get a snapshot MVVM:
+The control has several binding properties for take an snapshot:
+```csharp
+    /// Sets how often the SnapShot property is updated in seconds.
+    /// Default 0: no snapshots are taken
+    /// WARNING! A low frequency directly impacts over control performance and memory usage (with AutoSnapShotAsImageSource = true)
+    /// </summary>
+    public float AutoSnapShotSeconds
+    
+    /// Sets the snaphost image format
+    public ImageFormat AutoSnapShotFormat
+
+    /// Refreshes according to the frequency set in the AutoSnapShotSeconds property (if AutoSnapShotAsImageSource is set to true) or when GetSnapShot is called or TakeAutoSnapShot is set to true
+    public ImageSource SnapShot
+    
+    /// Refreshes according to the frequency set in the AutoSnapShotSeconds property or when GetSnapShot is called.
+    /// WARNING. Each time a snapshot is made, the previous stream is disposed.
+    public Stream SnapShotStream
+    
+    /// Change from false to true refresh SnapShot property
+    public bool TakeAutoSnapShot
+    
+    /// Change from false to true refresh SnapShot property
+    public bool AutoSnapShotAsImageSource
+```
 
 Enable and Handle barcodes detection:
 ```csharp

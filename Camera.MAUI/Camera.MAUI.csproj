@@ -29,8 +29,8 @@
 		<Authors>hjam40</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<Version>1.1.0</Version>
-		<PackageReleaseNotes>Added CameraInfo properties</PackageReleaseNotes>
+		<Version>1.2.0</Version>
+		<PackageReleaseNotes>Added MVVM snapshot properties</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)'=='net7.0-ios'">

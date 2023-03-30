@@ -54,6 +54,7 @@ internal class MauiCameraView: GridLayout
     private PreviewView.ImplementationMode currentImplementationMode = PreviewView.ImplementationMode.Performance;
     private int frames = 0;
     private bool initiated = false;
+    private bool snapping = false;
 
     public MauiCameraView(Context context, CameraView cameraView) : base(context)
     {
@@ -177,7 +178,7 @@ internal class MauiCameraView: GridLayout
         CameraResult result = CameraResult.Success;
         if (initiated)
         {
-            MainThread.BeginInvokeOnMainThread(() =>
+            MainThread.InvokeOnMainThreadAsync(() =>
             {
                 try
                 {
@@ -188,7 +189,7 @@ internal class MauiCameraView: GridLayout
                 {
                     result = CameraResult.AccessError;
                 }
-            });
+            }).Wait();
             started = false;
         }
         else
@@ -220,9 +221,18 @@ internal class MauiCameraView: GridLayout
             });
         });
     }
+    private void RefreshSnapShot()
+    {
+        cameraView.RefreshSnapshot(GetSnapShot(cameraView.AutoSnapShotFormat, true));
+    }
+
     private void FrameAnalyzer_FrameReady(object sender, EventArgs e)
     {
-        if (cameraView.BarCodeDetectionEnabled)
+        if (!snapping && cameraView != null && cameraView.AutoSnapShotSeconds > 0 && (DateTime.Now - cameraView.lastSnapshot).TotalSeconds >= cameraView.AutoSnapShotSeconds)
+        {
+            Task.Run(() => RefreshSnapShot());
+        }
+        else if(cameraView.BarCodeDetectionEnabled)
         {
             frames++;
             if (frames >= cameraView.BarCodeDetectionFrameRate)
@@ -232,12 +242,13 @@ internal class MauiCameraView: GridLayout
             }
         }
     }
-    public ImageSource GetSnapShot(ImageFormat imageFormat)
+    internal ImageSource GetSnapShot(ImageFormat imageFormat, bool auto = false)
     {
         ImageSource result = null;
 
-        if (started)
+        if (started && !snapping)
         {
+            snapping = true;
             Bitmap bitmap = null;
             float scale = 1;
             MainThread.InvokeOnMainThreadAsync(() =>
@@ -264,12 +275,22 @@ internal class MauiCameraView: GridLayout
                     MemoryStream stream = new();
                     bitmap.Compress(iformat, 100, stream);
                     stream.Position = 0;
-                    result = ImageSource.FromStream(() => stream);
+                    if (auto)
+                    {
+                        if (cameraView.AutoSnapShotAsImageSource)
+                            result = ImageSource.FromStream(() => stream);
+                        cameraView.SnapShotStream?.Dispose();
+                        cameraView.SnapShotStream = stream;
+                    }
+                    else
+                        result = ImageSource.FromStream(() => stream);
+                    bitmap.Dispose();
                 }
                 catch
                 {
                 }
             }
+            snapping = false;
         }
         GC.Collect();
         return result;
@@ -392,8 +413,7 @@ internal class MauiCameraView: GridLayout
     }
     public void SetZoomFactor(float zoom)
     {
-        if (camera != null)
-            camera.CameraControl.SetZoomRatio(Math.Max(MinZoomFactor, Math.Min(zoom, MaxZoomFactor)));
+        camera?.CameraControl.SetZoomRatio(Math.Max(MinZoomFactor, Math.Min(zoom, MaxZoomFactor)));
     }
     private async void SetImplementationMode(PreviewView.ImplementationMode mode)
     {

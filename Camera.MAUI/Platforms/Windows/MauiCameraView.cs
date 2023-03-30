@@ -276,10 +276,18 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             });
         }
     }
+    private void RefreshSnapShot()
+    {
+        cameraView.RefreshSnapshot(GetSnapShot(cameraView.AutoSnapShotFormat, true));
+    }
 
     private void FrameReader_FrameArrived(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
     {
-        if (cameraView.BarCodeDetectionEnabled)
+        if (!snapping && cameraView != null && cameraView.AutoSnapShotSeconds > 0 && (DateTime.Now - cameraView.lastSnapshot).TotalSeconds >= cameraView.AutoSnapShotSeconds)
+        {
+            Task.Run(() => RefreshSnapShot());
+        }
+        else if (cameraView.BarCodeDetectionEnabled)
         {
             frames++;
             if (frames >= cameraView.BarCodeDetectionFrameRate)
@@ -327,7 +335,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
         if (started) StopCameraAsync().Wait();
         Dispose();
     }
-    public ImageSource GetSnapShot(ImageFormat imageFormat)
+    internal ImageSource GetSnapShot(ImageFormat imageFormat, bool auto = false)
     {
         ImageSource result = null;
         if (started && !snapping && frameReader != null)
@@ -357,7 +365,17 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                         encoder.BitmapTransform.Flip = BitmapFlip.Horizontal;
                     encoder.FlushAsync().GetAwaiter().GetResult();
                     stream.Position = 0;
-                    result = ImageSource.FromStream(() => stream);
+                    if (auto)
+                    {
+                        if (cameraView.AutoSnapShotAsImageSource)
+                            result = ImageSource.FromStream(() => stream);
+                        cameraView.SnapShotStream?.Dispose();
+                        cameraView.SnapShotStream = stream;
+                    }else
+                        result = ImageSource.FromStream(() => stream);
+                    img.Dispose();
+                    snapshot.Dispose();
+                    frame.Dispose();
                 }
                 catch (Exception)
                 {
@@ -365,6 +383,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             }
             snapping = false;
         }
+        GC.Collect();
         return result;
     }
 
