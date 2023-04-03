@@ -69,7 +69,7 @@ For more information on permissions, see the [Microsoft Docs](https://docs.micro
 
 In XAML, make sure to add the right XML namespace:
 
-`xmlns:cv="xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`
+`xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`
 
 Use the control:
 ```xaml
