@@ -7,5 +7,6 @@ public enum CameraResult
     NoCameraSelected,
     AccessError,
     NoVideoFormatsAvailable,
-    NotInitiated
+    NotInitiated,
+    NoMicrophoneSelected
 }

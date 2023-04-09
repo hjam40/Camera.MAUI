@@ -1,5 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Camera.MAUI;
+using Microsoft.Maui.Hosting;
+using CommunityToolkit.Maui;
+
 namespace Camera.MAUI.Test
 {
     public static class MauiProgram
@@ -9,6 +12,8 @@ namespace Camera.MAUI.Test
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseMauiCommunityToolkit()
+                .UseMauiCommunityToolkitMediaElement()
                 .UseMauiCameraView()
                 .ConfigureFonts(fonts =>
                 {
@@ -19,7 +24,7 @@ namespace Camera.MAUI.Test
 #if DEBUG
 		builder.Logging.AddDebug();
 #endif
-
+            builder.Services.AddSingleton<CameraViewModel>();
             return builder.Build();
         }
     }

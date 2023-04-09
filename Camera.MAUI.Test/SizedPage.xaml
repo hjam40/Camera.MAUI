@@ -1,16 +1,23 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Camera.MAUI.Test.SizedPage"
              xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"
              Title="SizedPage" Background="white" x:Name="sizedPage">
     <ScrollView>
         <Grid>
             <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-                <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="200"/>
+                <Border WidthRequest="300" HeightRequest="200">
+                    <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="200" />
+                </Border>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
                     <Label x:Name="cameraLabel" Text="Select a camera:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black"/>
                     <Picker x:Name="cameraPicker" VerticalOptions="Center" TextColor="Black" SelectedIndexChanged="CameraPicker_SelectedIndexChanged"/>
+                </HorizontalStackLayout>
+                <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
+                    <Label x:Name="microLabel" Text="Select a microphone:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black"/>
+                    <Picker x:Name="microPicker" VerticalOptions="Center" TextColor="Black" SelectedIndexChanged="MicroPicker_SelectedIndexChanged"/>
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center">
                     <Label Text="Mirrored" VerticalOptions="Center" TextColor="Black"/>
@@ -37,13 +44,13 @@
                     <Button Text="Stop Camera" Clicked="OnStopClicked" />
                     <Button Text="Take Photo" Clicked="OnSnapClicked" />
                 </HorizontalStackLayout>
-                <Label BindingContext="{x:Reference sizedPage}" Text="{Binding BarcodeText}" TextColor="Black" FontAttributes="Bold" HorizontalOptions="Center" />
-                <Image x:Name="snapPreview" BindingContext="{x:Reference cameraView}"
-                Aspect="AspectFit"
-                Source="dotnet_bot.png"
-                WidthRequest="250"
-                HeightRequest="100"
-                HorizontalOptions="Center" />
+                <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
+                    <Button Text="Start Record" Clicked="OnStartRecordingClicked" />
+                    <Button Text="Stop Record" Clicked="OnStopRecordingClicked" />
+                </HorizontalStackLayout>
+                <Label BindingContext="{x:Reference sizedPage}" Text="{Binding BarcodeText}" TextColor="Black" FontAttributes="Bold" HorizontalOptions="Fill" HorizontalTextAlignment="Center" />
+                <Image x:Name="snapPreview" BindingContext="{x:Reference cameraView}" Aspect="AspectFit" Source="dotnet_bot.png" WidthRequest="300" HeightRequest="200" HorizontalOptions="Center" IsVisible="false"/>
+                <toolkit:MediaElement x:Name="player" ShouldAutoPlay="False" ShouldShowPlaybackControls="True" HeightRequest="300" WidthRequest="200" />
             </VerticalStackLayout>
         </Grid>
     </ScrollView>

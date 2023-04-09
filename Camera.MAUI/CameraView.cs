@@ -3,6 +3,7 @@ using Microsoft.Maui.Controls;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using ZXing;
+using static Microsoft.Maui.ApplicationModel.Permissions;
 #if IOS || MACCATALYST
 using DecodeDataType = UIKit.UIImage;
 #elif ANDROID
@@ -20,7 +21,11 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty FlashModeProperty = BindableProperty.Create(nameof(FlashMode), typeof(FlashMode), typeof(CameraView), FlashMode.Disabled);
     public static readonly BindableProperty TorchEnabledProperty = BindableProperty.Create(nameof(TorchEnabled), typeof(bool), typeof(CameraView), false);
     public static readonly BindableProperty CamerasProperty = BindableProperty.Create(nameof(Cameras), typeof(ObservableCollection<CameraInfo>), typeof(CameraView), new ObservableCollection<CameraInfo>());
+    public static readonly BindableProperty NumCamerasDetectedProperty = BindableProperty.Create(nameof(NumCamerasDetected), typeof(int), typeof(CameraView), 0);
     public static readonly BindableProperty CameraProperty = BindableProperty.Create(nameof(Camera), typeof(CameraInfo), typeof(CameraView), null, propertyChanged:CameraChanged);
+    public static readonly BindableProperty MicrophonesProperty = BindableProperty.Create(nameof(Microphones), typeof(ObservableCollection<MicrophoneInfo>), typeof(CameraView), new ObservableCollection<MicrophoneInfo>());
+    public static readonly BindableProperty NumMicrophonesDetectedProperty = BindableProperty.Create(nameof(NumMicrophonesDetected), typeof(int), typeof(CameraView), 0);
+    public static readonly BindableProperty MicrophoneProperty = BindableProperty.Create(nameof(Microphone), typeof(MicrophoneInfo), typeof(CameraView), null);
     public static readonly BindableProperty MirroredImageProperty = BindableProperty.Create(nameof(MirroredImage), typeof(bool), typeof(CameraView), false);
     public static readonly BindableProperty BarCodeDetectionEnabledProperty = BindableProperty.Create(nameof(BarCodeDetectionEnabled), typeof(bool), typeof(CameraView), false);
     public static readonly BindableProperty BarCodeDetectionFrameRateProperty = BindableProperty.Create(nameof(BarCodeDetectionFrameRate), typeof(int), typeof(CameraView), 10);
@@ -33,6 +38,9 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty SnapShotStreamProperty = BindableProperty.Create(nameof(SnapShotStream), typeof(Stream), typeof(CameraView), null, BindingMode.OneWayToSource);
     public static readonly BindableProperty TakeAutoSnapShotProperty = BindableProperty.Create(nameof(TakeAutoSnapShot), typeof(bool), typeof(CameraView), false, propertyChanged:TakeAutoSnapShotChanged);
     public static readonly BindableProperty AutoSnapShotAsImageSourceProperty = BindableProperty.Create(nameof(AutoSnapShotAsImageSource), typeof(bool), typeof(CameraView), false);
+    public static readonly BindableProperty AutoStartPreviewProperty = BindableProperty.Create(nameof(AutoStartPreview), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartPreviewChanged);
+    public static readonly BindableProperty AutoRecordingFileProperty = BindableProperty.Create(nameof(AutoRecordingFile), typeof(string), typeof(CameraView), string.Empty);
+    public static readonly BindableProperty AutoStartRecordingProperty = BindableProperty.Create(nameof(AutoStartRecording), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartRecordingChanged);
 
     /// <summary>
     /// Flash mode for take a photo. This is a bindable property.
@@ -59,12 +67,44 @@ public class CameraView : View, ICameraView
         set { SetValue(CamerasProperty, value); }
     }
     /// <summary>
+    /// Indicates the number of available cameras in the device.
+    /// </summary>
+    public int NumCamerasDetected
+    {
+        get { return (int)GetValue(NumCamerasDetectedProperty); }
+        set { SetValue(NumCamerasDetectedProperty, value); }
+    }
+    /// <summary>
     /// Set the camera to use by the controler. This is a bindable property.
     /// </summary>
     public CameraInfo Camera
     {
         get { return (CameraInfo)GetValue(CameraProperty); }
         set { SetValue(CameraProperty, value); }
+    }
+    /// <summary>
+    /// List of available microphones in the device. This is a bindable property.
+    /// </summary>
+    public ObservableCollection<MicrophoneInfo> Microphones
+    {
+        get { return (ObservableCollection<MicrophoneInfo>)GetValue(MicrophonesProperty); }
+        set { SetValue(MicrophonesProperty, value); }
+    }
+    /// <summary>
+    /// Indicates the number of available microphones in the device.
+    /// </summary>
+    public int NumMicrophonesDetected
+    {
+        get { return (int)GetValue(NumMicrophonesDetectedProperty); }
+        set { SetValue(NumMicrophonesDetectedProperty, value); }
+    }
+    /// <summary>
+    /// Set the microphone to use by the controler. This is a bindable property.
+    /// </summary>
+    public MicrophoneInfo Microphone
+    {
+        get { return (MicrophoneInfo)GetValue(MicrophoneProperty); }
+        set { SetValue(MicrophoneProperty, value); }
     }
     /// <summary>
     /// Turns a mirror image of the camera on and off. This is a bindable property.
@@ -192,6 +232,30 @@ public class CameraView : View, ICameraView
         get { return (bool)GetValue(AutoSnapShotAsImageSourceProperty); }
         set { SetValue(AutoSnapShotAsImageSourceProperty, value); }
     }
+    /// <summary>
+    /// Starts/Stops the Preview if camera property has been set
+    /// </summary>
+    public bool AutoStartPreview
+    {
+        get { return (bool)GetValue(AutoStartPreviewProperty); }
+        set { SetValue(AutoStartPreviewProperty, value); }
+    }
+    /// <summary>
+    /// Full path to file where record video will be recorded.
+    /// </summary>
+    public string AutoRecordingFile
+    {
+        get { return (string)GetValue(AutoRecordingFileProperty); }
+        set { SetValue(AutoRecordingFileProperty, value); }
+    }
+    /// <summary>
+    /// Starts/Stops record video to AutoRecordingFile if camera and microphone properties have been set
+    /// </summary>
+    public bool AutoStartRecording
+    {
+        get { return (bool)GetValue(AutoStartRecordingProperty); }
+        set { SetValue(AutoStartRecordingProperty, value); }
+    }
     public delegate void BarcodeResultHandler(object sender, BarcodeEventArgs args);
     /// <summary>
     /// Event launched every time a code is detected in the image if "BarCodeDetectionEnabled" is set to true.
@@ -201,6 +265,10 @@ public class CameraView : View, ICameraView
     /// Event launched when "Cameras" property has been loaded.
     /// </summary>
     public event EventHandler CamerasLoaded;
+    /// <summary>
+    /// Event launched when "Microphones" property has been loaded.
+    /// </summary>
+    public event EventHandler MicrophonesLoaded;
 
     private readonly BarcodeReaderGeneric BarcodeReader;
     internal DateTime lastSnapshot = DateTime.Now;
@@ -212,7 +280,11 @@ public class CameraView : View, ICameraView
     }
     private void CameraView_HandlerChanged(object sender, EventArgs e)
     {
-        if (Handler != null) CamerasLoaded?.Invoke(this, EventArgs.Empty);
+        if (Handler != null)
+        {
+            CamerasLoaded?.Invoke(this, EventArgs.Empty);
+            MicrophonesLoaded?.Invoke(this, EventArgs.Empty);
+        }
     }
     internal void RefreshSnapshot(ImageSource img)
     {
@@ -247,19 +319,35 @@ public class CameraView : View, ICameraView
             }
             if (results?.Length > 0)
             {
-                BarCodeResults = results;
-                OnPropertyChanged(nameof(BarCodeResults));
-                BarcodeDetected?.Invoke(this, new BarcodeEventArgs { Result = results });
+                bool refresh = true;
+                if (BarCodeResults != null)
+                {
+                    foreach ( var result in results)
+                    {
+                        refresh = BarCodeResults.FirstOrDefault(b => b.Text == result.Text && b.BarcodeFormat == result.BarcodeFormat) == null;
+                        if (refresh) break;
+                    }
+                }
+                if (refresh)
+                {
+                    BarCodeResults = results;
+                    OnPropertyChanged(nameof(BarCodeResults));
+                    BarcodeDetected?.Invoke(this, new BarcodeEventArgs { Result = results });
+                }
             }
         }
         catch {}
     }
-    private static void CameraChanged(BindableObject bindable, object oldValue, object newValue)
+    private static async void CameraChanged(BindableObject bindable, object oldValue, object newValue)
     {
         if (newValue != null && oldValue != newValue && bindable is CameraView cameraView && newValue is CameraInfo)
         {
             cameraView.OnPropertyChanged(nameof(MinZoomFactor));
             cameraView.OnPropertyChanged(nameof(MaxZoomFactor));
+            if (cameraView.AutoStartPreview)
+            {
+                await cameraView.StartCameraAsync();
+            }
         }
     }
     private static void TakeAutoSnapShotChanged(BindableObject bindable, object oldValue, object newValue)
@@ -267,6 +355,39 @@ public class CameraView : View, ICameraView
         if ((bool)newValue && !(bool)oldValue && bindable is CameraView cameraView)
         {
             cameraView.RefreshSnapshot(cameraView.GetSnapShot(cameraView.AutoSnapShotFormat));
+        }
+    }
+    private static async void AutoStartPreviewChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (oldValue != newValue && bindable is CameraView control)
+        {
+            try
+            {
+                if ((bool)newValue)
+                    await control.StartCameraAsync();
+                else
+                    await control.StopCameraAsync();
+            }
+            catch { }
+                    
+        }
+    }
+    private static async void AutoStartRecordingChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (oldValue != newValue && bindable is CameraView control)
+        {
+            try
+            {
+                if ((bool)newValue)
+                {
+                    if (!string.IsNullOrEmpty(control.AutoRecordingFile))
+                        await control.StartRecordingAsync(control.AutoRecordingFile);
+                }
+                else
+                    await control.StopRecordingAsync();
+            }
+            catch { }
+
         }
     }
     private static void BarCodeOptionsChanged(BindableObject bindable, object oldValue, object newValue)
@@ -287,15 +408,47 @@ public class CameraView : View, ICameraView
     public async Task<CameraResult> StartCameraAsync()
     {
         CameraResult result = CameraResult.AccessError;
-        if (Camera != null && Handler != null && Handler is CameraViewHandler handler)
+        if (Camera != null)
         {
-            result = await handler.StartCameraAsync();
-            if (result == CameraResult.Success)
+            if (Handler != null && Handler is CameraViewHandler handler)
             {
-                OnPropertyChanged(nameof(MinZoomFactor));
-                OnPropertyChanged(nameof(MaxZoomFactor));
+                result = await handler.StartCameraAsync();
+                if (result == CameraResult.Success)
+                {
+                    BarCodeResults = null;
+                    OnPropertyChanged(nameof(MinZoomFactor));
+                    OnPropertyChanged(nameof(MaxZoomFactor));
+                }
             }
         }
+        else
+            result = CameraResult.NoCameraSelected;
+
+        return result;
+    }
+    /// <summary>
+    /// Start recording a video async. "Camera" property must not be null.
+    /// <paramref name="file"/> Full path to file where video will be stored.
+    /// </summary>
+    public async Task<CameraResult> StartRecordingAsync(string file)
+    {
+        CameraResult result = CameraResult.AccessError;
+        if (Camera != null)
+        {
+            if (Handler != null && Handler is CameraViewHandler handler)
+            {
+                result = await handler.StartRecordingAsync(file);
+                if (result == CameraResult.Success)
+                {
+                    BarCodeResults = null;
+                    OnPropertyChanged(nameof(MinZoomFactor));
+                    OnPropertyChanged(nameof(MaxZoomFactor));
+                }
+            }
+        }
+        else
+            result = CameraResult.NoCameraSelected;
+
         return result;
     }
     /// <summary>
@@ -307,6 +460,18 @@ public class CameraView : View, ICameraView
         if (Handler != null && Handler is CameraViewHandler handler)
         {
             result = await handler.StopCameraAsync();
+        }
+        return result;
+    }
+    /// <summary>
+    /// Stop recording a video async.
+    /// </summary>
+    public async Task<CameraResult> StopRecordingAsync()
+    {
+        CameraResult result = CameraResult.AccessError;
+        if (Handler != null && Handler is CameraViewHandler handler)
+        {
+            result = await handler.StopRecordingAsync();
         }
         return result;
     }
@@ -335,5 +500,42 @@ public class CameraView : View, ICameraView
             result = await handler.SaveSnapShot(imageFormat, SnapFilePath);
         }
         return result;
+    }
+    internal void RefreshDevices()
+    {
+        Task.Run(() => { 
+            OnPropertyChanged(nameof(Cameras)); 
+            NumCamerasDetected = Cameras.Count;
+            OnPropertyChanged(nameof(Microphones));
+            NumMicrophonesDetected = Microphones.Count;
+        });
+    }
+    public static async Task<bool> RequestPermissions(bool withMic = false, bool withStorageWrite = false)
+    {
+        var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
+        if (status != PermissionStatus.Granted)
+        {
+            status = await Permissions.RequestAsync<Permissions.Camera>();
+            if (status != PermissionStatus.Granted) return false;
+        }
+        if (withMic)
+        {
+            status = await Permissions.CheckStatusAsync<Permissions.Microphone>();
+            if (status != PermissionStatus.Granted)
+            {
+                status = await Permissions.RequestAsync<Permissions.Microphone>();
+                if (status != PermissionStatus.Granted) return false;
+            }
+        }
+        if (withStorageWrite)
+        {
+            status = await Permissions.CheckStatusAsync<Permissions.StorageWrite>();
+            if (status != PermissionStatus.Granted)
+            {
+                status = await Permissions.RequestAsync<Permissions.StorageWrite>();
+                if (status != PermissionStatus.Granted) return false;
+            }
+        }
+        return true;
     }
 }

@@ -1,3 +1,4 @@
+using CommunityToolkit.Maui.Views;
 using System.Diagnostics;
 using ZXing.QrCode.Internal;
 
@@ -26,17 +27,23 @@ public partial class SizedPage : ContentPage
 	{
 		InitializeComponent();
         cameraView.CamerasLoaded += CameraView_CamerasLoaded;
+        cameraView.MicrophonesLoaded += CameraView_MicrophonesLoaded;
         cameraView.BarcodeDetected += CameraView_BarcodeDetected;
         cameraView.BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
         {
             AutoRotate = true,
-            PossibleFormats = { ZXing.BarcodeFormat.QR_CODE },
+            PossibleFormats = { ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.EAN_13 },
             ReadMultipleCodes = false,
             TryHarder = true,
             TryInverted = true
         };
         BindingContext = cameraView;
-        //this.SetBinding(StreamProperty, nameof(cameraView.SnapShotStream));
+    }
+
+    private void CameraView_MicrophonesLoaded(object sender, EventArgs e)
+    {
+        microPicker.ItemsSource = cameraView.Microphones;
+        microPicker.SelectedIndex = 0;
     }
 
     private void CameraView_BarcodeDetected(object sender, ZXingHelper.BarcodeEventArgs args)
@@ -65,6 +72,39 @@ public partial class SizedPage : ContentPage
         {
             cameraLabel.BackgroundColor = Colors.Red;
         }
+    }
+    private async void OnStartRecordingClicked(object sender, EventArgs e)
+    {
+        if (cameraPicker.SelectedItem != null && cameraPicker.SelectedItem is CameraInfo camera)
+        {
+            //if (microPicker.SelectedItem != null && microPicker.SelectedItem is MicrophoneInfo micro)
+            //{
+                cameraLabel.BackgroundColor = Colors.White;
+                microLabel.BackgroundColor = Colors.White;
+                cameraView.Camera = camera;
+            //cameraView.Microphone = micro;
+#if IOS
+            var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mov"));
+#else
+            var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4"));
+#endif
+            Debug.WriteLine("Start recording result " + result);
+            //}
+            //else
+            //    microLabel.BackgroundColor = Colors.Red;
+        }
+        else
+            cameraLabel.BackgroundColor = Colors.Red;
+    }
+    private async void OnStopRecordingClicked(object sender, EventArgs e)
+    {
+        var result = await cameraView.StopRecordingAsync();
+        Debug.WriteLine("Stop recording result " + result);
+#if IOS
+        player.Source = MediaSource.FromFile(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mov"));
+#else
+        player.Source = MediaSource.FromFile(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4"));
+#endif
     }
     private async void OnStopClicked(object sender, EventArgs e)
     {
@@ -107,6 +147,7 @@ public partial class SizedPage : ContentPage
                 zoomStepper.Maximum = camera.MaxZoomFactor;
             }else
                 zoomLabel.IsEnabled = zoomStepper.IsEnabled = true;
+            cameraView.Camera = camera;
         }
     }
 
@@ -129,5 +170,13 @@ public partial class SizedPage : ContentPage
         else if (cameraView.AutoSnapShotSeconds <= 0)
             snapPreview.RemoveBinding(Image.SourceProperty);
         cameraView.TakeAutoSnapShot = e.Value;
+    }
+
+    private void MicroPicker_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (microPicker.SelectedItem != null && microPicker.SelectedItem is MicrophoneInfo micro)
+        {
+            cameraView.Microphone = micro;
+        }
     }
 }

@@ -7,6 +7,7 @@
     <ScrollView>
         <Grid>
             <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                <Button HorizontalOptions="Center" Text="Go to MVVM Cam" Clicked="Button_Clicked_2" Margin="5"/>
                 <Button HorizontalOptions="Center" Text="Go to Parameters Cam" Clicked="Button_Clicked" Margin="5"/>
                 <Button HorizontalOptions="Center" Text="Go to Fullscreen Cam" Clicked="Button2_Clicked" Margin="5"/>
                 <Button HorizontalOptions="Center" Text="Go to Code generation" Clicked="Button_Clicked_1" Margin="5"/>

@@ -17,6 +17,7 @@ A ContetView control for camera management with the next properties:
 | Take snapshot  | ✅  | ✅  | ✅  |
 | Save snapshot  | ✅  | ✅  | ✅  |
 | Barcode detection/decode  | ✅  | ✅  | ✅  |
+| Video/audio recording  | ✅  | ✅  | ✅  |
 
 ### Install and configure CameraView
 
@@ -39,7 +40,7 @@ A ContetView control for camera management with the next properties:
     	return builder.Build();
     }
     ```
-1. Add camera permissions to your application:
+1. Add camera/microphone permissions to your application:
 
 #### Android
 
@@ -47,6 +48,9 @@ In your `AndroidManifest.xml` file (Platforms\Android) add the following permiss
 
 ```xml
 <uses-permission android:name="android.permission.CAMERA" />
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.RECORD_VIDEO" />
+
 ```
 
 #### iOS/MacCatalyst
@@ -56,12 +60,14 @@ In your `info.plist` file (Platforms\iOS / Platforms\MacCatalyst) add the follow
 ```xml
 <key>NSCameraUsageDescription</key>
 <string>This app uses camera for...</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>This app needs access to the microphone for record videos</string>
 ```
 Make sure that you enter a clear and valid reason for your app to access the camera. This description will be shown to the user.
 
 #### Windows
 
-In your Package.appxmanifest file (Platforms\Windows) go to Capabilities and mark Web Camera.
+In your Package.appxmanifest file (Platforms\Windows) go to Capabilities and mark Web Camera and Microphone.
 
 For more information on permissions, see the [Microsoft Docs](https://docs.microsoft.com/dotnet/maui/platform-integration/appmodel/permissions).
 
@@ -69,7 +75,7 @@ For more information on permissions, see the [Microsoft Docs](https://docs.micro
 
 In XAML, make sure to add the right XML namespace:
 
-`xmlns:cv="xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`
+`xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`
 
 Use the control:
 ```xaml
@@ -81,12 +87,14 @@ Configure the events:
         cameraView.CamerasLoaded += CameraView_CamerasLoaded;
         cameraView.BarcodeDetected += CameraView_BarcodeDetected;
 ```
-Configure the camera to use:
+Configure the camera and microphone to use:
 ```csharp
     private void CameraView_CamerasLoaded(object sender, EventArgs e)
     {
-        if (cameraView.Cameras.Count > 0)
+        if (cameraView.NumCamerasDetected > 0)
         {
+            if (cameraView.NumMicrophonesDetected > 0)
+                cameraView.Microphone = cameraView.Microphones.First();
             cameraView.Camera = cameraView.Cameras.First();
             MainThread.BeginInvokeOnMainThread(async () =>
             {
@@ -143,8 +151,16 @@ if (cameraView.MaxZoomFactor >= 2.5f)
 Get a snapshot from the playback
 ```csharp
 ImageSource imageSource = cameraView.GetSnapShot(ImageFormat.PNG);
+bool result = cameraView.SaveSnapShot(ImageFormat.PNG, filePath);
 ```
-Get a snapshot MVVM:
+Record a video:
+```csharp
+var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4"));
+....
+result = cameraView.StopRecordingAsync();
+```
+
+**Use Control with MVVM:**
 The control has several binding properties for take an snapshot:
 ```csharp
     /// Sets how often the SnapShot property is updated in seconds.
@@ -168,7 +184,42 @@ The control has several binding properties for take an snapshot:
     
     /// If true SnapShot property is refreshed according to the frequency set in the AutoSnapShotSeconds property
     public bool AutoSnapShotAsImageSource
+    /// Starts/Stops the Preview if camera property has been set
+    public bool AutoStartPreview
+    {
+        get { return (bool)GetValue(AutoStartPreviewProperty); }
+        set { SetValue(AutoStartPreviewProperty, value); }
+    }
+    /// Full path to file where record video will be recorded.
+    public string AutoRecordingFile
+    {
+        get { return (string)GetValue(AutoRecordingFileProperty); }
+        set { SetValue(AutoRecordingFileProperty, value); }
+    }
+    /// Starts/Stops record video to AutoRecordingFile if camera and microphone properties have been set
+    public bool AutoStartRecording
+    {
+        get { return (bool)GetValue(AutoStartRecordingProperty); }
+        set { SetValue(AutoStartRecordingProperty, value); }
+    }
 ```
+```xaml
+<cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="200"
+  BarCodeOptions="{Binding BarCodeOptions}" 
+  BarCodeResults="{Binding BarCodeResults, Mode=OneWayToSource}"
+  Cameras="{Binding Cameras, Mode=OneWayToSource}" Camera="{Binding Camera}" 
+  AutoStartPreview="{Binding AutoStartPreview}" 
+  NumCamerasDetected="{Binding NumCameras, Mode=OneWayToSource}"
+  AutoSnapShotAsImageSource="True" AutoSnapShotFormat="PNG" 
+  TakeAutoSnapShot="{Binding TakeSnapshot}" AutoSnapShotSeconds="{Binding SnapshotSeconds}"
+  Microphones="{Binding Microphones, Mode=OneWayToSource}" Microphone="{Binding Microphone}"
+  NumMicrophonesDetected="{Binding NumMicrophones, Mode=OneWayToSource}"
+  AutoRecordingFile="{Binding RecordingFile}" 
+  AutoStartRecording="{Binding AutoStartRecording}"/>
+  ```
+
+You have a complete example of MVVM in [MVVM Example](https://github.com/hjam40/Camera.MAUI/tree/master/Camera.MAUI.Test/MVVM)
+
 
 Enable and Handle barcodes detection:
 ```csharp

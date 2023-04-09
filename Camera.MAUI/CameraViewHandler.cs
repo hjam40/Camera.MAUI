@@ -72,32 +72,22 @@ internal partial class CameraViewHandler : ViewHandler<CameraView, PlatformView>
 #endif
     }
 
-    public float GetMinZoomFactor()
-    {
-        if (PlatformView != null)
-        {
-#if WINDOWS || ANDROID || IOS || MACCATALYST
-            return PlatformView.MinZoomFactor;
-#endif
-        }
-        return 1f;
-    }
-    public float GetMaxZoomFactor()
-    {
-        if (PlatformView != null)
-        {
-#if WINDOWS || ANDROID || IOS || MACCATALYST
-            return PlatformView.MaxZoomFactor;
-#endif
-        }
-        return 1f;
-    }
     public Task<CameraResult> StartCameraAsync()
     {
         if (PlatformView != null)
         {
 #if WINDOWS || ANDROID || IOS || MACCATALYST
             return PlatformView.StartCameraAsync();
+#endif
+        }
+        return Task.Run(() => { return CameraResult.AccessError; });
+    }
+    public Task<CameraResult> StartRecordingAsync(string file)
+    {
+        if (PlatformView != null)
+        {
+#if WINDOWS || ANDROID || IOS
+            return PlatformView.StartRecordingAsync(file);
 #endif
         }
         return Task.Run(() => { return CameraResult.AccessError; });
@@ -112,6 +102,16 @@ internal partial class CameraViewHandler : ViewHandler<CameraView, PlatformView>
             var task = new Task<CameraResult>(() => { return PlatformView.StopCamera(); });
             task.Start();
             return task;
+#endif
+        }
+        return Task.Run(() => { return CameraResult.AccessError; });
+    }
+    public Task<CameraResult> StopRecordingAsync()
+    {
+        if (PlatformView != null)
+        {
+#if WINDOWS || ANDROID || IOS || MACCATALYST
+            return PlatformView.StopRecordingAsync();
 #endif
         }
         return Task.Run(() => { return CameraResult.AccessError; });

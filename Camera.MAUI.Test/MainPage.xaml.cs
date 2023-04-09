@@ -20,4 +20,9 @@ public partial class MainPage : ContentPage
     {
         await Navigation.PushAsync(new BarcodeGenerationPage());
     }
+
+    private async void Button_Clicked_2(object sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new MVVMPage());
+    }
 }

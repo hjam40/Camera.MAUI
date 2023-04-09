@@ -1,0 +1,980 @@
+﻿using Android.Content;
+using Android.Widget;
+using AndroidX.Camera.View;
+using AndroidX.Camera.Video;
+using AndroidX.Camera.Lifecycle;
+using AndroidX.Camera.Core;
+using Java.Util.Concurrent;
+using Android.Graphics;
+using AndroidX.Camera.Core.Impl;
+using AndroidX.Camera.Camera2.InterOp;
+using CameraCharacteristics = Android.Hardware.Camera2.CameraCharacteristics;
+using Android.Hardware.Camera2;
+using Android.Media;
+using Android.Provider;
+using VideoCapture = AndroidX.Camera.Video.VideoCapture;
+using Android.Runtime;
+using Android.Views;
+using Android.Util;
+using Android.OS;
+using static AndroidX.Camera.Core.Internal.CameraUseCaseAdapter;
+using Android.Hardware.Camera2.Params;
+using Android.Renderscripts;
+using Android.Gestures;
+using Size = Android.Util.Size;
+using Android.Nfc;
+using AndroidX.Camera.Core.Impl.Utils;
+using Java.Util;
+using Android.Hardware.Lights;
+using Microsoft.Maui.ApplicationModel;
+using static Android.Icu.Text.ListFormatter;
+using Class = Java.Lang.Class;
+using RectF = Android.Graphics.RectF;
+using Cam = Android.Hardware.Camera;
+using static Java.Text.Normalizer;
+
+namespace Camera.MAUI.Platforms.Android;
+
+internal class MauiCameraView: FrameLayout
+{
+    public CameraInfo Camera { get; set; }
+    public float MinZoomFactor
+    {
+        get
+        {
+            if (camera != null)
+                return (camera.CameraInfo.ZoomState.Value as IZoomState).MinZoomRatio;
+            else
+                return 1f;
+        }
+    }
+    public float MaxZoomFactor
+    {
+        get
+        {
+            if (camera != null)
+                return (camera.CameraInfo.ZoomState.Value as IZoomState).MaxZoomRatio;
+            else
+                return 1f;
+        }
+    }
+    private record InternalCameraInfo
+    {
+        public CameraSelector CameraSelector { get; set; }
+        public string CameraId { get; set; }
+    }
+    private readonly List<CameraInfo> Cameras = new();
+    private readonly List<InternalCameraInfo> InternalCameras = new();
+    private readonly CameraView cameraView;
+    private readonly PreviewView previewView;
+    private IExecutorService executorService;
+    private ImageAnalysis imageAnalyzer;
+    private ImageAnalyzer frameAnalyzer;
+    private ProcessCameraProvider cameraProvider;
+    private ICamera camera;
+    private Preview cameraPreview;
+    private bool started = false;
+    private PreviewView.ImplementationMode currentImplementationMode = PreviewView.ImplementationMode.Performance;
+    private int frames = 0;
+    private bool initiated = false;
+    private bool snapping = false;
+    private Context context;
+    private Recording recording;
+    private VideoCapture capture;
+
+    private readonly TextureView textureView;
+    public CameraCaptureSession previewSession;
+    public MediaRecorder mediaRecorder;
+    private MySurfaceTextureListener surfaceTextureListener;
+    public CaptureRequest.Builder builder;
+    private CaptureRequest.Builder previewBuilder;
+    private HandlerThread backgroundThread;
+    private Handler backgroundHandler;
+    private CameraDevice cameraDevice;
+    private MyCameraStateCallback stateListener;
+    private Size videoSize;
+    private Size previewSize;
+
+    private CameraManager manager;
+
+
+    public MauiCameraView(Context context, CameraView cameraView) : base(context)
+    {
+        this.context = context;
+        this.cameraView = cameraView;
+        previewView = new PreviewView(context);
+        previewView.SetScaleType(PreviewView.ScaleType.FillCenter);
+        //AddView(previewView);
+
+        textureView = new(context);
+        
+        //surfaceTextureListener = new MySurfaceTextureListener();
+        //textureView.SurfaceTextureListener = surfaceTextureListener;
+        stateListener = new MyCameraStateCallback(this);
+        backgroundThread = new HandlerThread("CameraBackground");
+        backgroundThread.Start();
+        backgroundHandler = new Handler(backgroundThread.Looper);
+        AddView(textureView);
+        InitDevices();
+    }
+
+    private void InitDevices()
+    {
+        if (!initiated)
+        {
+            manager = (CameraManager)context.GetSystemService(Context.CameraService);
+            foreach (var id in manager.GetCameraIdList())
+            {
+                var cameraInfo = new CameraInfo { DeviceId = id, MinZoomFactor = 1 };
+                var chars = manager.GetCameraCharacteristics(id);
+                if ((int)(chars.Get(CameraCharacteristics.LensFacing) as Java.Lang.Number) == (int)LensFacing.Back)
+                {
+                    cameraInfo.Name = "Back Camera";
+                    cameraInfo.Position = CameraPosition.Back;
+                }
+                else if ((int)(chars.Get(CameraCharacteristics.LensFacing) as Java.Lang.Number) == (int)LensFacing.Front)
+                {
+                    cameraInfo.Name = "Front Camera";
+                    cameraInfo.Position = CameraPosition.Front;
+                }
+                else
+                {
+                    cameraInfo.Name = "Camera " + id;
+                    cameraInfo.Position = CameraPosition.Unknow;
+                }
+                cameraInfo.MaxZoomFactor = (float)(chars.Get(CameraCharacteristics.ScalerAvailableMaxDigitalZoom) as Java.Lang.Number) * 10;
+                cameraInfo.HasFlashUnit = (bool)(chars.Get(CameraCharacteristics.FlashInfoAvailable) as Java.Lang.Boolean);
+                Cameras.Add(cameraInfo);
+            }
+            executorService = Executors.NewSingleThreadExecutor();
+
+            initiated = true;
+            if (cameraView != null)
+            {
+                cameraView.Cameras.Clear();
+                foreach (var cam in Cameras) cameraView.Cameras.Add(cam);
+                cameraView.RefreshCameras();
+            }
+        }
+    }
+
+    private void InitDevices_old()
+    {
+        if (!initiated)
+        {
+            try
+            {
+                var initCameraProvider = ProcessCameraProvider.GetInstance(Context);
+                cameraProvider = (ProcessCameraProvider)initCameraProvider.Get();
+                cameraPreview = new Preview.Builder().Build();
+                cameraPreview.SetSurfaceProvider(previewView.SurfaceProvider);
+                executorService = Executors.NewSingleThreadExecutor();
+                frameAnalyzer = new ImageAnalyzer();
+                frameAnalyzer.FrameReady += FrameAnalyzer_FrameReady;
+                imageAnalyzer = new ImageAnalysis.Builder().SetBackpressureStrategy(ImageAnalysis.StrategyKeepOnlyLatest).Build();
+                imageAnalyzer.SetAnalyzer(executorService, frameAnalyzer);
+
+                if (cameraProvider != null)
+                {
+                    foreach (var camInfo in cameraProvider.AvailableCameraInfos)
+                    {
+                        var c2cInfo = Camera2CameraInfo.From(camInfo);
+                        if ((int)(c2cInfo.GetCameraCharacteristic(CameraCharacteristics.LensFacing) as Java.Lang.Number) == (int)LensFacing.Back)
+                            Cameras.Add(new CameraInfo 
+                            { 
+                                Name = "Back Camera", DeviceId = c2cInfo.CameraId, Position = CameraPosition.Back,
+                                HasFlashUnit = camInfo.HasFlashUnit,
+                                MinZoomFactor = (camInfo.ZoomState.Value as IZoomState).MinZoomRatio,
+                                MaxZoomFactor = (camInfo.ZoomState.Value as IZoomState).MaxZoomRatio
+                            });
+                        else if ((int)(c2cInfo.GetCameraCharacteristic(CameraCharacteristics.LensFacing) as Java.Lang.Number) == (int)LensFacing.Front)
+                            Cameras.Add(new CameraInfo 
+                            { 
+                                Name = "Front Camera", DeviceId = c2cInfo.CameraId, Position = CameraPosition.Front,
+                                HasFlashUnit = camInfo.HasFlashUnit,
+                                MinZoomFactor = (camInfo.ZoomState.Value as IZoomState).MinZoomRatio,
+                                MaxZoomFactor = (camInfo.ZoomState.Value as IZoomState).MaxZoomRatio
+                            });
+                        else
+                        {
+                            Cameras.Add(new CameraInfo 
+                            {
+                                Name = "Camera " + c2cInfo.CameraId, DeviceId = c2cInfo.CameraId, Position = CameraPosition.Unknow,
+                                HasFlashUnit = camInfo.HasFlashUnit,
+                                MinZoomFactor = (camInfo.ZoomState.Value as IZoomState).MinZoomRatio,
+                                MaxZoomFactor = (camInfo.ZoomState.Value as IZoomState).MaxZoomRatio
+                            });
+                        }
+                        InternalCameras.Add(new InternalCameraInfo { CameraSelector = camInfo.CameraSelector, CameraId = c2cInfo.CameraId });
+                    }
+                    Camera = Cameras.FirstOrDefault();
+                    MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        try
+                        {
+                            cameraProvider?.UnbindAll();
+                        }
+                        catch{}
+                    }).Wait();
+                    initiated = true;
+                    if (cameraView != null)
+                    {
+                        cameraView.Cameras.Clear();
+                        foreach (var cam in Cameras) cameraView.Cameras.Add(cam);
+                        cameraView.RefreshCameras();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
+    public async Task<CameraResult> StartRecordingAsync(string file)
+    {
+        var result = CameraResult.Success;
+        //var manager = (CameraManager)context.GetSystemService(Context.CameraService);
+
+        CameraCharacteristics characteristics = manager.GetCameraCharacteristics(Camera.DeviceId);
+        StreamConfigurationMap map = (StreamConfigurationMap)characteristics.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
+        //videoSize = ChooseVideoSize(map.GetOutputSizes(Class.FromType(typeof(MediaRecorder))));
+        //videoSize = ChooseVideoSize(map.GetOutputSizes(Class.FromType(typeof(ImageReader))));
+        //previewSize = ChooseOptimalSize(map.GetOutputSizes(Class.FromType(typeof(MediaRecorder))), Width, Height, videoSize);
+        previewSize = new Size(videoSize.Width, videoSize.Height);
+        //textureView.SetAspectRatio(previewSize.Width, previewSize.Height);
+        //textureView.SetAspectRatio(640, 480);
+        configureTransform(Width, Height);
+        //AdjustAspectRatioFit(videoSize.Width, videoSize.Height);
+        //AdjustAspectRatioFit(1440, 1080);
+        
+        //manager.OpenCamera(Camera.DeviceId, stateListener, null);
+        manager.OpenCamera(Camera.DeviceId, executorService, stateListener);
+        //recorder.SetAudioSource(AudioSource.Mic);
+        //recorder.SetInputSurface(cameraPreview.sur);
+
+        return result;
+    }
+
+    private void startPreview()
+    {
+        SurfaceTexture texture = textureView.SurfaceTexture;
+        //texture.SetDefaultBufferSize(previewSize.Width, previewSize.Height);
+        //texture.SetDefaultBufferSize(1920, 1080);
+        texture.SetDefaultBufferSize(videoSize.Width, videoSize.Height);
+        //textureView.LayoutParameters = new LayoutParams { Width = Width, Height = Height };
+        //textureView.SetAspectRatio(Width, Height);
+        //var matrix = textureView.GetTransform(null);
+        /*
+        MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            textureView.LayoutParameters = new LayoutParams { Width = Width, Height = Height };
+            textureView.SetForegroundGravity(GravityFlags.Center);
+            textureView.Holder.SetFixedSize(Width, Height);
+        }).Wait();
+        */
+        previewBuilder = cameraDevice.CreateCaptureRequest(CameraTemplate.Preview);
+        var surfaces = new List<OutputConfiguration>();
+        var previewSurface = new Surface(texture);
+        //var previewSurface = textureView.Holder.Surface;
+        var oconfig = new OutputConfiguration(previewSurface);
+        surfaces.Add(oconfig);
+        
+        previewBuilder.AddTarget(previewSurface);
+
+        SessionConfiguration config = new SessionConfiguration((int)SessionType.Regular,surfaces,executorService, new PreviewCaptureStateCallback(this));
+        //cameraDevice.CreateCaptureSession(surfaces, new PreviewCaptureStateCallback(this), backgroundHandler);
+        cameraDevice.CreateCaptureSession(config);
+    }
+    public void updatePreview()
+    {
+        if (null == cameraDevice)
+            return;
+
+        try
+        {
+            previewBuilder.Set(CaptureRequest.ControlMode, Java.Lang.Integer.ValueOf((int)ControlMode.Auto));
+            previewSession.SetRepeatingRequest(previewBuilder.Build(), null, null);
+        }
+        catch (CameraAccessException e)
+        {
+            e.PrintStackTrace();
+        }
+    }
+    public async Task<CameraResult> StartCameraAsync()
+    {
+        var result = CameraResult.Success;
+        if (initiated)
+        {
+            //textureView.LayoutParameters = new LayoutParams { Width = 1920, Height = 1080 };
+            if (await RequestPermissions())
+            {
+                if (started) StopCamera();
+                if (Camera != null)
+                {
+                    CameraCharacteristics characteristics = manager.GetCameraCharacteristics(Camera.DeviceId);
+
+                    StreamConfigurationMap map = (StreamConfigurationMap)characteristics.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
+                    videoSize = ChooseVideoSize(map.GetOutputSizes(Class.FromType(typeof(MediaRecorder))));
+                    previewSize = new Size(Width, Height);
+                    //AdjustAspectRatioFit(videoSize.Width, videoSize.Height);
+
+                    //previewSize = new Size(Width, Height);
+                    //AdjustAspectRatioFit(2304, 1728);
+                    videoSize = ChooseVideoSize(map.GetOutputSizes(Class.FromType(typeof(ImageReader))));
+                    //AdjustAspectRatioFit(1920, 1080);
+                    AdjustAspectRatioFit(videoSize.Width, videoSize.Height);
+                    manager.OpenCamera(Camera.DeviceId, executorService, stateListener);
+                    started = true;
+
+                    //textureView.LayoutParameters = new LayoutParams { Width = Width, Height = Height };
+                }
+                else
+                    result = CameraResult.NoCameraSelected;
+            }
+            else
+                result = CameraResult.AccessDenied;
+        }
+        else
+            result = CameraResult.NotInitiated;
+
+        return result;
+    }
+    public async Task<CameraResult> StartCameraAsync_old()
+    {
+        var result = CameraResult.Success;
+        if (initiated)
+        {
+            //previewView.LayoutParameters = new LayoutParams { Width = Width, Height = Height };
+            if (started) StopCamera();
+            if (await RequestPermissions())
+            {
+                if (Camera != null && cameraProvider != null)
+                {
+                    try
+                    {
+                        if (previewView.ScaleX == -1)
+                            SetImplementationMode(PreviewView.ImplementationMode.Compatible);
+                        else
+                            SetImplementationMode(PreviewView.ImplementationMode.Performance);
+                        CameraSelector cameraSelector = InternalCameras.First(c => c.CameraId == Camera.DeviceId).CameraSelector;
+                        frames = 0;
+                        var recorderBuilder = new Recorder.Builder();
+                        var recorder = recorderBuilder.SetQualitySelector(QualitySelector.From(Quality.Hd)).Build();
+
+                        ContentValues contentValues = new ContentValues();
+                        //contentValues.Put(MediaStore.Video.Media.InternalContentUri.Path)
+
+                        string filename = System.IO.Path.Combine(FileSystem.Current.CacheDirectory, "temp.mp4");
+                        var file = new Java.IO.File(filename);
+
+                        IntPtr classPtr = JNIEnv.FindClass("androidx/camera/video/FileOutputOptions$Builder");
+                        IntPtr constructorPtr = JNIEnv.GetMethodID(classPtr, "<init>", "(Ljava/io/File;)V");
+                        IntPtr builderPtr = JNIEnv.NewObject(classPtr, constructorPtr, new JValue(file));
+                        IntPtr buildPtr = JNIEnv.GetMethodID(classPtr, "build", "()Landroidx/camera/video/FileOutputOptions;");
+                        IntPtr fileOutputOptionsPtr = JNIEnv.CallNonvirtualObjectMethod(builderPtr, classPtr, buildPtr);
+                        var fileOutputOptions = new Java.Lang.Object(fileOutputOptionsPtr, JniHandleOwnership.TransferLocalRef)
+                            .JavaCast<FileOutputOptions>();
+
+                        capture = VideoCapture.WithOutput(recorder);
+
+                        if (Context is AndroidX.Lifecycle.ILifecycleOwner lifecycleOwner)
+                            camera = cameraProvider.BindToLifecycle(lifecycleOwner, cameraSelector, cameraPreview, capture);//imageAnalyzer, capture);
+                        else if (Platform.CurrentActivity is AndroidX.Lifecycle.ILifecycleOwner maLifecycleOwner)
+                            camera = cameraProvider.BindToLifecycle(maLifecycleOwner, cameraSelector, cameraPreview, capture);//imageAnalyzer, capture);
+
+                        recorder = capture.Output as Recorder;
+                        recording = recorder.PrepareRecording(context, fileOutputOptions).WithAudioEnabled().Start(executorService, new RecordConsumer());
+                        UpdateTorch();
+                        UpdateMirroredImage();
+                        SetZoomFactor(cameraView.ZoomFactor);
+                        started = true;
+                    }
+                    catch
+                    {
+                        result = CameraResult.AccessError;
+                    }
+                }
+                else
+                    result = CameraResult.AccessError;
+            }
+            else
+                result = CameraResult.AccessDenied;
+        }else
+            result = CameraResult.NotInitiated;
+        return result;
+    }
+    public CameraResult StopCamera()
+    {
+        CameraResult result = CameraResult.Success;
+        if (initiated)
+        {
+            previewSession?.StopRepeating();
+            cameraDevice?.Close();
+            previewSession?.Dispose();
+            cameraDevice?.Dispose();
+            started = false;
+        }
+        else
+            result = CameraResult.NotInitiated;
+        return result;
+    }
+    public CameraResult StopCamera_old()
+    {
+        CameraResult result = CameraResult.Success;
+        if (initiated)
+        {
+            MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                try
+                {
+                    recording?.Stop();
+                    cameraProvider?.UnbindAll();
+                    camera?.Dispose();
+                }
+                catch (System.Exception)
+                {
+                    result = CameraResult.AccessError;
+                }
+            }).Wait();
+            started = false;
+        }
+        else
+            result = CameraResult.NotInitiated;
+        return result;
+    }
+    public void DisposeControl()
+    {
+        if (started) StopCamera();
+        cameraPreview?.Dispose();
+        executorService?.Shutdown();
+        executorService?.Dispose();
+        frameAnalyzer?.Dispose();
+        imageAnalyzer?.Dispose();
+        RemoveAllViews();
+        previewView?.Dispose();
+        Dispose();
+    }
+    private void ProccessQR()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            var bitmap = previewView.Bitmap;
+            Task.Run(() =>
+            {
+                cameraView.DecodeBarcode(bitmap);
+                bitmap.Dispose();
+                GC.Collect();
+            });
+        });
+    }
+    private void RefreshSnapShot()
+    {
+        cameraView.RefreshSnapshot(GetSnapShot(cameraView.AutoSnapShotFormat, true));
+    }
+
+    private void FrameAnalyzer_FrameReady(object sender, EventArgs e)
+    {
+        if (!snapping && cameraView != null && cameraView.AutoSnapShotSeconds > 0 && (DateTime.Now - cameraView.lastSnapshot).TotalSeconds >= cameraView.AutoSnapShotSeconds)
+        {
+            Task.Run(() => RefreshSnapShot());
+        }
+        else if(cameraView.BarCodeDetectionEnabled)
+        {
+            frames++;
+            if (frames >= cameraView.BarCodeDetectionFrameRate)
+            {
+                ProccessQR();
+                frames = 0;
+            }
+        }
+    }
+    internal ImageSource GetSnapShot(ImageFormat imageFormat, bool auto = false)
+    {
+        ImageSource result = null;
+
+        if (started && !snapping)
+        {
+            snapping = true;
+            Bitmap bitmap = null;
+            float scale = 1;
+            MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                //bitmap = previewView.Bitmap;
+                //scale = previewView.ScaleX;
+                bitmap = textureView.Bitmap;
+                //bitmap = Bitmap.CreateBitmap(Width, Height, Bitmap.Config.Argb8888);
+                //Canvas canvas = new Canvas(bitmap);
+                //textureView.Draw(canvas);
+                //scale = textureView.ScaleX;
+            }).Wait();
+            if (bitmap != null)
+            {
+                try
+                {
+                    bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, bitmap.Width, bitmap.Height, textureView.GetTransform(null), false);
+                    bitmap = Bitmap.CreateBitmap(bitmap, Math.Abs(bitmap.Width - Width) / 2, Math.Abs(bitmap.Height - Height) / 2, Width, Height);
+                    //bitmap = ApplyTransform(bitmap);
+                    /*
+                    if (scale == -1)
+                    {
+                        Matrix matrix = new();
+                        matrix.PreScale(-1, 1);
+                        bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, bitmap.Width, bitmap.Height, textureView.GetTransform(null), false);
+                    }
+                    */
+                    var iformat = imageFormat switch
+                    {
+                        ImageFormat.JPEG => Bitmap.CompressFormat.Jpeg,
+                        _ => Bitmap.CompressFormat.Png
+                    };
+                    MemoryStream stream = new();
+                    bitmap.Compress(iformat, 100, stream);
+                    stream.Position = 0;
+                    if (auto)
+                    {
+                        if (cameraView.AutoSnapShotAsImageSource)
+                            result = ImageSource.FromStream(() => stream);
+                        cameraView.SnapShotStream?.Dispose();
+                        cameraView.SnapShotStream = stream;
+                    }
+                    else
+                        result = ImageSource.FromStream(() => stream);
+                    bitmap.Dispose();
+                }
+                catch
+                {
+                }
+            }
+            snapping = false;
+        }
+        GC.Collect();
+        return result;
+    }
+
+    public bool SaveSnapShot(ImageFormat imageFormat, string SnapFilePath)
+    {
+        bool result = true;
+
+        if (started)
+        {
+            Bitmap bitmap = null;
+            float scale = 1;
+            MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                bitmap = previewView.Bitmap;
+                scale = previewView.ScaleX;
+            }).Wait();
+            if (bitmap != null)
+            {
+                try
+                {
+                    if (File.Exists(SnapFilePath)) File.Delete(SnapFilePath);
+                    if (scale == -1)
+                    {
+                        Matrix matrix = new();
+                        matrix.PreScale(-1, 1);
+                        bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, bitmap.Width, bitmap.Height, matrix, false);
+                    }
+
+                    var iformat = imageFormat switch
+                    {
+                        ImageFormat.JPEG => Bitmap.CompressFormat.Jpeg,
+                        _ => Bitmap.CompressFormat.Png
+                    };
+                    using FileStream stream = new(SnapFilePath, FileMode.OpenOrCreate);
+                    bitmap.Compress(iformat, 80, stream);
+                    stream.Close();
+                }
+                catch (System.Exception)
+                {
+                    result = false;
+                }
+            }
+        }else
+            result = false;
+
+        GC.Collect();
+        return result;
+    }
+    private static async Task<bool> RequestPermissions()
+    {
+        var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
+        if (status != PermissionStatus.Granted)
+        {
+            status = await Permissions.RequestAsync<Permissions.Camera>();
+            if (status != PermissionStatus.Granted) return false;
+        }
+        return true;
+    }
+    public async void UpdateCamera()
+    {
+        if (cameraView != null && cameraView.Camera != null)
+        {
+            if (started) StopCamera();
+            Camera = cameraView.Camera;
+            if (started) await StartCameraAsync();
+        }
+    }
+    public void UpdateMirroredImage()
+    {
+        if (cameraView != null)
+        {
+            if (cameraView.MirroredImage)
+            {
+                previewView.ScaleX = -1;
+                SetImplementationMode(PreviewView.ImplementationMode.Compatible);
+            }
+            else
+            {
+                previewView.ScaleX = 1;
+            }
+        }
+    }
+    public void UpdateTorch()
+    {
+        if (camera != null && cameraView != null)
+        {
+            if (camera.CameraInfo.HasFlashUnit)
+                camera.CameraControl.EnableTorch(cameraView.TorchEnabled);
+        }
+    }
+
+    public void UpdateFlashMode()
+    {
+        if (camera != null && cameraView != null)
+        {
+            try
+            {
+                if (camera.CameraInfo.HasFlashUnit)
+                {
+                    switch (cameraView.FlashMode)
+                    {
+                        case FlashMode.Auto:
+                            camera.CameraControl.EnableTorch(true);
+                            break;
+                        case FlashMode.Enabled:
+                            camera.CameraControl.EnableTorch(true);
+                            break;
+                        case FlashMode.Disabled:
+                            camera.CameraControl.EnableTorch(false);
+                            break;
+                    }
+                }
+            }
+            catch (System.Exception)
+            {
+            }
+        }
+    }
+    public void SetZoomFactor(float zoom)
+    {
+        camera?.CameraControl.SetZoomRatio(Math.Max(MinZoomFactor, Math.Min(zoom, MaxZoomFactor)));
+    }
+    private async void SetImplementationMode(PreviewView.ImplementationMode mode)
+    {
+
+        if (started && currentImplementationMode != mode)
+        {
+            StopCamera();
+            previewView.SetImplementationMode(mode);
+            await StartCameraAsync();
+        }else
+            previewView.SetImplementationMode(mode);
+
+        currentImplementationMode = mode;
+    }
+    private Size ChooseVideoSize(Size[] choices)
+    {
+        Size result = choices[0];
+        int diference = 100000;
+        if (Width >= Height)
+        {
+            foreach (Size size in choices)
+            {
+                //System.Diagnostics.Debug.WriteLine($"{size.Width}x{size.Height}");
+                if (size.Height >= 1080 && size.Width >= Width && size.Width == size.Height * 4 / 3)
+                {
+                    System.Diagnostics.Debug.WriteLine($"{size.Width}x{size.Height}");
+                    int dif = Math.Abs(size.Width - Width) + Math.Abs(size.Height - Height);
+                    if (dif < diference) result = size;
+                    diference = dif;
+                }
+                else if (size.Width >= result.Width && result.Width < Width)
+                    result = size;
+            }
+        }
+        else
+        {
+            foreach (Size size in choices)
+            {
+                if (size.Height >= 1080 && size.Height >= Height && size.Width == size.Height * 4 / 3)
+                {
+                    int dif = Math.Abs(size.Width - Width) + Math.Abs(size.Height - Height);
+                    if (dif < diference) result = size;
+                    diference = dif;
+                }
+                else if (size.Height >= result.Height && result.Height < Height)
+                    result = size;
+            }
+        }
+        return result;
+    }
+
+    private Size ChooseOptimalSize(Size[] choices, int width, int height, Size aspectRatio)
+    {
+        var bigEnough = new List<Size>();
+        int w = aspectRatio.Width;
+        int h = aspectRatio.Height;
+        foreach (Size option in choices)
+        {
+            if (option.Height == option.Width * h / w &&
+                option.Width >= width && option.Height >= height)
+                bigEnough.Add(option);
+        }
+
+        if (bigEnough.Count > 0)
+            return (Size)Collections.Min(bigEnough, new CompareSizesByArea());
+        else
+        {
+            return choices[0];
+        }
+    }
+    
+    private void AdjustAspectRatioFit(int videoWidth, int videoHeight)
+    {
+        Matrix txform = new Matrix();
+        float centerX = Math.Max((videoWidth - Width) / 2, 0);
+        float centerY = Math.Max((videoHeight - Height) / 2, 0);
+        float scaleX = (float)videoHeight / Height;
+        float scaleY = (float)videoWidth / Width;
+
+        txform.PostScale(Width > Height ? 1 : scaleX, Height <= Width ? scaleY : 1, centerX, centerY);
+        textureView.SetTransform(txform);
+    }
+
+    private Bitmap ApplyTransform(Bitmap bitmap)
+    {
+        Matrix txform = new Matrix();
+        float centerX = Math.Max((videoSize.Width - Width) / 2, 0);
+        float centerY = Math.Max((videoSize.Height - Height) / 2, 0);
+        float scaleX = (float)videoSize.Height / Height;
+        float scaleY = (float)videoSize.Width / Width;
+
+        txform.PostScale(Width > Height ? 1 : scaleX, Height <= Width ? scaleY : 1, centerX, centerY);
+        return Bitmap.CreateBitmap(bitmap, 0, 0, Width, Height, txform, false);
+    }
+
+    private void AdjustAspectRatioFill(int videoWidth, int videoHeight)
+    {
+        int viewWidth = previewSize.Width;
+        int viewHeight = previewSize.Height;
+        double aspectRatio = Math.Max((double)videoHeight / videoWidth, (double)videoWidth / videoHeight);
+        int newWidth, newHeight;
+
+        if (viewWidth <= viewHeight)
+        {
+            newWidth = videoWidth;
+            newHeight = (viewHeight * videoWidth) / viewWidth;
+        }
+        else
+        {
+            newHeight = videoHeight;
+            newWidth = (viewWidth * videoHeight) / viewHeight;
+        }
+
+        int xoff = (videoWidth - newWidth) / 2;
+        int yoff = (videoHeight - newHeight) / 2;
+
+        Matrix txform = new Matrix();
+        txform = textureView.GetTransform(txform);
+        //txform.SetScale((float)newWidth / viewWidth, (float)newHeight / viewHeight);
+        txform.PostTranslate(xoff, yoff);
+        textureView.SetTransform(txform);
+    }
+    
+    private void configureTransform(int viewWidth, int viewHeight)
+    {
+        if (null == context || null == previewSize || null == textureView)
+            return;
+
+        int rotation = (int)context.Display.Rotation;
+        var matrix = new Matrix();
+        var viewRect = new RectF(0, 0, viewWidth, viewHeight);
+        var bufferRect = new RectF(0, 0, previewSize.Height, previewSize.Width);
+        float centerX = viewRect.CenterX();
+        float centerY = viewRect.CenterY();
+        if ((int)SurfaceOrientation.Rotation90 == rotation || (int)SurfaceOrientation.Rotation270 == rotation)
+        {
+            bufferRect.Offset((centerX - bufferRect.CenterX()), (centerY - bufferRect.CenterY()));
+            matrix.SetRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.Fill);
+            float scale = System.Math.Max(
+                (float)viewHeight / previewSize.Height,
+                (float)viewHeight / previewSize.Width);
+            matrix.PostScale(scale, scale, centerX, centerY);
+            matrix.PostRotate(90 * (rotation - 2), centerX, centerY);
+        }
+        textureView.SetTransform(matrix);
+    }
+    
+    class ImageAnalyzer : Java.Lang.Object, ImageAnalysis.IAnalyzer
+    {
+        public IImageProxy Image { get; private set; }
+        public event EventHandler FrameReady;
+        public void Analyze(IImageProxy image)
+        {
+            Image = image;
+            FrameReady?.Invoke(this, EventArgs.Empty);
+            image.Close();
+        }
+    }
+    class RecordConsumer : Java.Lang.Object, AndroidX.Core.Util.IConsumer
+    {
+        public void Accept(Java.Lang.Object t)
+        {
+            
+        }
+    }
+
+    public class AutoFitTextureView : TextureView
+    {
+        private int mRatioWidth = 0;
+        private int mRatioHeight = 0;
+
+        public AutoFitTextureView(Context context)
+            : this(context, null)
+        {
+            SurfaceTextureAvailable += AutoFitTextureView_SurfaceTextureAvailable;
+        }
+
+        private void AutoFitTextureView_SurfaceTextureAvailable(object sender, SurfaceTextureAvailableEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine($"NEW IMAGES={e.Width}x{e.Height} -> {Width}x{Height}");
+        }
+
+        public AutoFitTextureView(Context context, IAttributeSet attrs)
+            : this(context, attrs, 0)
+        {
+
+        }
+        public AutoFitTextureView(Context context, IAttributeSet attrs, int defStyle)
+            : base(context, attrs, defStyle)
+        {
+
+        }
+
+        public void SetAspectRatio(int width, int height)
+        {
+            if (width == 0 || height == 0)
+                throw new ArgumentException("Size cannot be negative.");
+            mRatioWidth = width;
+            mRatioHeight = height;
+            RequestLayout();
+        }
+
+        protected override void OnMeasure(int widthMeasureSpec, int heightMeasureSpec)
+        {
+            base.OnMeasure(widthMeasureSpec, heightMeasureSpec);
+            int width = MeasureSpec.GetSize(widthMeasureSpec);
+            int height = MeasureSpec.GetSize(heightMeasureSpec);
+            if (0 == mRatioWidth || 0 == mRatioHeight)
+            {
+                SetMeasuredDimension(width, height);
+            }
+            else
+            {
+                if (width < (float)height * mRatioWidth / (float)mRatioHeight)
+                {
+                    SetMeasuredDimension(width, width * mRatioHeight / mRatioWidth);
+                }
+                else
+                {
+                    SetMeasuredDimension(height * mRatioWidth / mRatioHeight, height);
+                }
+            }
+        }
+    }
+    public class MySurfaceTextureListener : Java.Lang.Object, TextureView.ISurfaceTextureListener
+    {
+        //Camera2VideoFragment fragment;
+        //public MySurfaceTextureListener(Camera2VideoFragment frag)
+        public MySurfaceTextureListener()
+        {
+            //fragment = frag;
+        }
+
+        public void OnSurfaceTextureAvailable(SurfaceTexture surface_texture, int width, int height)
+        {
+            //fragment.openCamera(width, height);
+        }
+
+        public void OnSurfaceTextureSizeChanged(SurfaceTexture surface_texture, int width, int height)
+        {
+            System.Diagnostics.Debug.WriteLine($"SURFACE SIZE={width}x{height}");
+            //fragment.configureTransform(width, height);
+        }
+
+        public bool OnSurfaceTextureDestroyed(SurfaceTexture surface_texture)
+        {
+            return true;
+        }
+
+        public void OnSurfaceTextureUpdated(SurfaceTexture surface_texture)
+        {
+        }
+
+    }
+    public class MyCameraStateCallback : CameraDevice.StateCallback
+    {
+        MauiCameraView fragment;
+        public MyCameraStateCallback(MauiCameraView frag)
+        {
+            fragment = frag;
+        }
+        public override void OnOpened(CameraDevice camera)
+        {
+            fragment.cameraDevice = camera;
+            fragment.startPreview();
+            //fragment.cameraOpenCloseLock.Release();
+            //if (null != fragment.textureView)
+                //fragment.configureTransform(fragment.textureView.Width, fragment.textureView.Height);
+        }
+
+        public override void OnDisconnected(CameraDevice camera)
+        {
+            //fragment.cameraOpenCloseLock.Release();
+            camera.Close();
+            fragment.cameraDevice = null;
+        }
+
+        public override void OnError(CameraDevice camera, CameraError error)
+        {
+            //fragment.cameraOpenCloseLock.Release();
+            camera?.Close();
+            fragment.cameraDevice = null;
+            //if (null != fragment.Activity)
+            //    fragment.Activity.Finish();
+        }
+    }
+    public class PreviewCaptureStateCallback : CameraCaptureSession.StateCallback
+    {
+        MauiCameraView fragment;
+        public PreviewCaptureStateCallback(MauiCameraView frag)
+        {
+            fragment = frag;
+        }
+        public override void OnConfigured(CameraCaptureSession session)
+        {
+            fragment.previewSession = session;
+            fragment.updatePreview();
+
+        }
+
+        public override void OnConfigureFailed(CameraCaptureSession session)
+        {
+            //if (null != fragment.Activity)
+            //    Toast.MakeText(fragment.Activity, "Failed", ToastLength.Short).Show();
+        }
+    }
+}
+
+

@@ -30,6 +30,8 @@
 	<string>Assets.xcassets/appicon.appiconset</string>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs access to the camera to take photos and scan QR codes</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs access to the microphone for record videos</string>
 	<key>CFBundleIdentifier</key>
 	<string></string>
 </dict>
