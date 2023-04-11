@@ -13,7 +13,7 @@ using UIKit;
 
 namespace Camera.MAUI.Platforms.Apple;
 
-internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDelegate, IAVCaptureFileOutputRecordingDelegate
+internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDelegate, IAVCaptureFileOutputRecordingDelegate, IAVCapturePhotoCaptureDelegate
 {
     private CameraInfo Camera { get; set; }
     private readonly List<CameraInfo> Cameras = new();
@@ -25,6 +25,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     private readonly AVCaptureVideoPreviewLayer PreviewLayer;
     private readonly AVCaptureVideoDataOutput videoDataOutput;
     private AVCaptureMovieFileOutput recordOutput;
+    private AVCapturePhotoOutput photoOutput;
     private readonly AVCaptureSession captureSession;
     private AVCaptureDevice captureDevice;
     private AVCaptureDevice micDevice;
@@ -37,6 +38,9 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     private int frames = 0;
     private bool initiated = false;
     private bool snapping = false;
+    private bool photoTaken = false;
+    private bool photoError = false;
+    private UIImage photo;
 
     public MauiCameraView(CameraView cameraView)
     {
@@ -44,20 +48,20 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
 
         captureSession = new AVCaptureSession
         {   
-            SessionPreset = AVCaptureSession.PresetHigh
+            SessionPreset = AVCaptureSession.PresetPhoto
         };
         PreviewLayer = new(captureSession)
         {
             VideoGravity = AVLayerVideoGravity.ResizeAspectFill
         };
         Layer.AddSublayer(PreviewLayer);
-
         videoDataOutput = new AVCaptureVideoDataOutput();
         var videoSettings = NSDictionary.FromObjectAndKey(
             new NSNumber((int)CVPixelFormatType.CV32BGRA),
             CVPixelBuffer.PixelFormatTypeKey);
         videoDataOutput.WeakVideoSettings = videoSettings;
         videoDataOutput.AlwaysDiscardsLateVideoFrames = true;
+        photoOutput = new AVCapturePhotoOutput();
         cameraDispacher = new DispatchQueue("CameraDispacher");
 
         videoDataOutput.AlwaysDiscardsLateVideoFrames = true;
@@ -186,6 +190,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         captureInput = new AVCaptureDeviceInput(captureDevice, out var err);
                         captureSession.AddInput(captureInput);
                         captureSession.AddOutput(videoDataOutput);
+                        captureSession.AddOutput(photoOutput);
                         captureSession.StartRunning();
                         UpdateMirroredImage();
                         SetZoomFactor(cameraView.ZoomFactor);
@@ -301,34 +306,45 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             }
         }
     }
-    public void UpdateFlashMode()
-    {
-        if (captureDevice != null && cameraView != null)
-        {
-            try
-            {
-                captureDevice.LockForConfiguration(out NSError error);
-                if (captureDevice.HasTorch && captureDevice.TorchAvailable)
-                {
-                    switch (cameraView.FlashMode)
-                    {
-                        case FlashMode.Auto:
-                            captureDevice.TorchMode =  AVCaptureTorchMode.Auto;
-                            break;
-                        case FlashMode.Enabled:
-                            captureDevice.TorchMode = AVCaptureTorchMode.On;
-                            break;
-                        case FlashMode.Disabled:
-                            captureDevice.TorchMode = AVCaptureTorchMode.Off;
-                            break;
-                    }
-                }
-                captureDevice.UnlockForConfiguration();
-            }
-            catch
-            {
 
+    internal async Task<Stream> TakePhotoAsync(ImageFormat imageFormat)
+    {
+        photoError = photoTaken = false;
+        var photoSettings = AVCapturePhotoSettings.Create();
+        photoSettings.FlashMode = cameraView.FlashMode switch
+        {
+            FlashMode.Auto => AVCaptureFlashMode.Auto,
+            FlashMode.Enabled => AVCaptureFlashMode.On,
+            _ => AVCaptureFlashMode.Off
+        };
+        photoOutput.CapturePhoto(photoSettings, this);
+        while(!photoTaken && !photoError) await Task.Delay(50);
+
+        if (photoError || photo == null)
+            return null;
+        else
+        {
+            UIImageOrientation orientation = UIDevice.CurrentDevice.Orientation switch
+            {
+                UIDeviceOrientation.LandscapeRight => UIImageOrientation.Down,
+                UIDeviceOrientation.LandscapeLeft => UIImageOrientation.Up,
+                UIDeviceOrientation.PortraitUpsideDown => UIImageOrientation.Left,
+                _ => UIImageOrientation.Right
+            };
+            if (photo.Orientation != orientation)
+                photo = UIImage.FromImage(photo.CGImage, photo.CurrentScale, orientation);
+            MemoryStream stream = new();
+            switch (imageFormat)
+            {
+                case ImageFormat.JPEG:
+                    photo.AsJPEG().AsStream().CopyTo(stream);
+                    break;
+                default:
+                    photo.AsPNG().AsStream().CopyTo(stream);
+                    break;
             }
+            stream.Position = 0;
+            return stream;
         }
     }
     public ImageSource GetSnapShot(ImageFormat imageFormat, bool auto = false)
@@ -392,7 +408,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
 
         if (started && lastCapture != null)
         {
-            if (File.Exists(SnapFilePath)) File.Delete(SnapFilePath);
+            if (File.Exists(SnapFilePath)) File.Delete(SnapFilePath);            
             MainThread.InvokeOnMainThreadAsync(() =>
             {
                 try
@@ -517,6 +533,20 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         {
             sampleBuffer?.Dispose();
         }
+    }
+    [Export("captureOutput:didFinishProcessingPhotoSampleBuffer:previewPhotoSampleBuffer:resolvedSettings:bracketSettings:error:")]
+    void DidFinishProcessingPhoto(AVCapturePhotoOutput captureOutput, CMSampleBuffer photoSampleBuffer, CMSampleBuffer previewPhotoSampleBuffer, AVCaptureResolvedPhotoSettings resolvedSettings, AVCaptureBracketedStillImageSettings bracketSettings, NSError error)
+    {
+        if (photoSampleBuffer == null)
+        {
+            photoError = true;
+            return;
+        }
+
+        NSData imageData = AVCapturePhotoOutput.GetJpegPhotoDataRepresentation(photoSampleBuffer, previewPhotoSampleBuffer);
+
+        photo = new UIImage(imageData);
+        photoTaken = true;
     }
 
     public override void LayoutSubviews()

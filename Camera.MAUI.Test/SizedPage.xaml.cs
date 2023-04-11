@@ -1,5 +1,6 @@
 using CommunityToolkit.Maui.Views;
 using System.Diagnostics;
+using ZXing;
 using ZXing.QrCode.Internal;
 
 namespace Camera.MAUI.Test;
@@ -112,7 +113,7 @@ public partial class SizedPage : ContentPage
         Debug.WriteLine("Stop camera result " + result);
     }
     private void OnSnapClicked(object sender, EventArgs e)
-    {
+    {        
         var result = cameraView.GetSnapShot(ImageFormat.PNG);
         if (result != null)
             snapPreview.Source = result;
@@ -177,6 +178,16 @@ public partial class SizedPage : ContentPage
         if (microPicker.SelectedItem != null && microPicker.SelectedItem is MicrophoneInfo micro)
         {
             cameraView.Microphone = micro;
+        }
+    }
+
+    private async void Button_Clicked(object sender, EventArgs e)
+    {
+        var stream = await cameraView.TakePhotoAsync();
+        if (stream != null)
+        {
+            var result = ImageSource.FromStream(() => stream);
+            snapPreview.Source = result;
         }
     }
 }

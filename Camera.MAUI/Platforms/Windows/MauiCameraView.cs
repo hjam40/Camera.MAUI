@@ -403,6 +403,50 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
         if (started) StopCameraAsync().Wait();
         Dispose();
     }
+    internal async Task<Stream> TakePhotoAsync(ImageFormat imageFormat)
+    {
+        if (started && !snapping && frameReader != null)
+        {
+            snapping = true;
+            SoftwareBitmap snapshot = null;
+
+            var frame = frameReader.TryAcquireLatestFrame();
+            if (frame != null && frame.VideoMediaFrame != null)
+            {
+                snapshot = frame.VideoMediaFrame.SoftwareBitmap;
+            }
+            if (snapshot != null)
+            {
+                var iformat = imageFormat switch
+                {
+                    ImageFormat.JPEG => BitmapEncoder.JpegEncoderId,
+                    _ => BitmapEncoder.PngEncoderId
+                };
+                MemoryStream stream = new();
+                BitmapEncoder encoder = await BitmapEncoder.CreateAsync(iformat, stream.AsRandomAccessStream());
+                var img = SoftwareBitmap.Convert(snapshot, BitmapPixelFormat.Rgba8, BitmapAlphaMode.Premultiplied);
+                encoder.SetSoftwareBitmap(img);
+                try
+                {
+                    if (flowDirection == Microsoft.UI.Xaml.FlowDirection.RightToLeft)
+                        encoder.BitmapTransform.Flip = BitmapFlip.Horizontal;
+                    await encoder.FlushAsync();
+                    stream.Position = 0;
+                    img.Dispose();
+                    snapshot.Dispose();
+                    frame.Dispose();
+                    snapping = false;
+                    return stream;
+                }
+                catch (Exception)
+                {
+                }
+            }
+            snapping = false;
+        }
+        GC.Collect();
+        return null;
+    }
     internal ImageSource GetSnapShot(ImageFormat imageFormat, bool auto = false)
     {
         ImageSource result = null;
@@ -455,7 +499,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
         return result;
     }
 
-    public async Task<bool> SaveSnapShot(ImageFormat imageFormat, string SnapFilePath)
+    internal async Task<bool> SaveSnapShot(ImageFormat imageFormat, string SnapFilePath)
     {
         bool result = true;
         if (started && !snapping && frameReader != null)

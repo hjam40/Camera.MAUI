@@ -18,6 +18,7 @@ A ContetView control for camera management with the next properties:
 | Save snapshot  | ✅  | ✅  | ✅  |
 | Barcode detection/decode  | ✅  | ✅  | ✅  |
 | Video/audio recording  | ✅  | ✅  | ✅  |
+| Take Photo  | ✅  | ✅  | ✅  |
 
 ### Install and configure CameraView
 
@@ -159,6 +160,15 @@ var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Curren
 ....
 result = cameraView.StopRecordingAsync();
 ```
+Take a photo
+```csharp
+var stream = await cameraView.TakePhotoAsync();
+if (stream != null)
+{
+    var result = ImageSource.FromStream(() => stream);
+    snapPreview.Source = result;
+}
+```
 
 **Use Control with MVVM:**
 The control has several binding properties for take an snapshot:
@@ -223,17 +233,17 @@ You have a complete example of MVVM in [MVVM Example](https://github.com/hjam40/
 
 Enable and Handle barcodes detection:
 ```csharp
-		cameraView.BarcodeDetected += CameraView_BarcodeDetected;
-        cameraView.BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
-        {
-            AutoRotate = true,
-            PossibleFormats = { ZXing.BarcodeFormat.QR_CODE },
-            ReadMultipleCodes = false,
-            TryHarder = true,
-            TryInverted = true
-        };
-		cameraView.BarCodeDetectionFrameRate = 10;
-		cameraView.BarCodeDetectionEnabled = true;
+	cameraView.BarcodeDetected += CameraView_BarcodeDetected;
+    cameraView.BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
+    {
+        AutoRotate = true,
+        PossibleFormats = { ZXing.BarcodeFormat.QR_CODE },
+        ReadMultipleCodes = false,
+        TryHarder = true,
+        TryInverted = true
+    };
+	cameraView.BarCodeDetectionFrameRate = 10;
+	cameraView.BarCodeDetectionEnabled = true;
 
     private void CameraView_BarcodeDetected(object sender, ZXingHelper.BarcodeEventArgs args)
     {

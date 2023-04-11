@@ -256,6 +256,10 @@ public class CameraView : View, ICameraView
         get { return (bool)GetValue(AutoStartRecordingProperty); }
         set { SetValue(AutoStartRecordingProperty, value); }
     }
+    /// <summary>
+    /// If true BarcodeDetected event will invoke only if a Results is diferent from preview Results
+    /// </summary>
+    public bool ControlBarcodeResultDuplicate { get; set; } = false;
     public delegate void BarcodeResultHandler(object sender, BarcodeEventArgs args);
     /// <summary>
     /// Event launched every time a code is detected in the image if "BarCodeDetectionEnabled" is set to true.
@@ -320,12 +324,15 @@ public class CameraView : View, ICameraView
             if (results?.Length > 0)
             {
                 bool refresh = true;
-                if (BarCodeResults != null)
+                if (ControlBarcodeResultDuplicate)
                 {
-                    foreach ( var result in results)
+                    if (BarCodeResults != null)
                     {
-                        refresh = BarCodeResults.FirstOrDefault(b => b.Text == result.Text && b.BarcodeFormat == result.BarcodeFormat) == null;
-                        if (refresh) break;
+                        foreach (var result in results)
+                        {
+                            refresh = BarCodeResults.FirstOrDefault(b => b.Text == result.Text && b.BarcodeFormat == result.BarcodeFormat) == null;
+                            if (refresh) break;
+                        }
                     }
                 }
                 if (refresh)
@@ -474,6 +481,19 @@ public class CameraView : View, ICameraView
             result = await handler.StopRecordingAsync();
         }
         return result;
+    }
+    /// <summary>
+    /// Takes a photo from the camera selected.
+    /// </summary>
+    /// <param name="imageFormat">The capture image format</param>
+    /// <returns>A stream with the photo info</returns>
+    public async Task<Stream> TakePhotoAsync(ImageFormat imageFormat = ImageFormat.JPEG)
+    {
+        if (Handler != null && Handler is CameraViewHandler handler)
+        {
+            return await handler.TakePhotoAsync(imageFormat);
+        }
+        return null;
     }
     /// <summary>
     /// Takes a capture form the active camera playback.
