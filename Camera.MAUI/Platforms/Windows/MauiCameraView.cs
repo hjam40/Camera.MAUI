@@ -4,7 +4,6 @@ using Windows.Media.Capture;
 using Windows.Devices.Enumeration;
 using Windows.Media.Core;
 using Windows.Graphics.Imaging;
-using Windows.Media.Devices;
 using Panel = Windows.Devices.Enumeration.Panel;
 using Windows.Media.MediaProperties;
 
@@ -43,7 +42,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
         Content = mediaElement;
         InitDevices();
     }
-    public async void UpdateCamera()
+    internal async void UpdateCamera()
     {
         if (cameraView != null && cameraView.Camera != null)
         {
@@ -56,7 +55,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                 Camera = cameraView.Camera;
         }
     }
-    public void UpdateMirroredImage()
+    internal void UpdateMirroredImage()
     {
         if (cameraView != null)
         {
@@ -67,14 +66,14 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             if (mediaElement != null) mediaElement.FlowDirection = flowDirection;
         }
     }
-    public void SetZoomFactor(float zoom)
+    internal void SetZoomFactor(float zoom)
     {
         if (Camera != null && frameSource != null && frameSource.Controller.VideoDeviceController.ZoomControl.Supported)
         {
             frameSource.Controller.VideoDeviceController.ZoomControl.Value = Math.Max(Camera.MinZoomFactor, Math.Min(zoom, Camera.MaxZoomFactor));
         }
     }
-    public void UpdateFlashMode()
+    internal void UpdateFlashMode()
     {
         if (frameSource != null && cameraView != null)
         {
@@ -97,7 +96,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             }
         }
     }
-    public void UpdateTorch()
+    internal void UpdateTorch()
     {
         if (frameSource != null && cameraView != null)
         {
@@ -172,7 +171,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             }
         }
     }
-    public async Task<CameraResult> StartRecordingAsync(string file)
+    internal async Task<CameraResult> StartRecordingAsync(string file)
     {
         CameraResult result = CameraResult.Success;
 
@@ -229,11 +228,11 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
 
         return result;
     }
-    public async Task<CameraResult> StopRecordingAsync()
+    internal async Task<CameraResult> StopRecordingAsync()
     {
         return await StartCameraAsync();
     }
-    public async Task<CameraResult> StartCameraAsync()
+    internal async Task<CameraResult> StartCameraAsync()
     {
         CameraResult result = CameraResult.Success;
 
@@ -360,7 +359,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
         }
     }
 
-    public async Task<CameraResult> StopCameraAsync()
+    internal async Task<CameraResult> StopCameraAsync()
     {
         CameraResult result = CameraResult.Success;
         if (initiated)
@@ -398,7 +397,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
 
         return result;
     }
-    public void DisposeControl()
+    internal void DisposeControl()
     {
         if (started) StopCameraAsync().Wait();
         Dispose();

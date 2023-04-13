@@ -7,12 +7,11 @@ using Android.Hardware.Camera2;
 using Android.Media;
 using Android.Views;
 using Android.Util;
-using Android.OS;
 using Android.Hardware.Camera2.Params;
 using Size = Android.Util.Size;
 using Class = Java.Lang.Class;
-using Point = Android.Graphics.Point;
-
+using Rect = Android.Graphics.Rect;
+using Android.Runtime;
 
 namespace Camera.MAUI.Platforms.Android;
 
@@ -32,7 +31,7 @@ internal class MauiCameraView: GridLayout
     private bool recording = false;
     private readonly Context context;
 
-    private readonly AutoFitTextureView textureView;
+    private readonly TextureView textureView;
     public CameraCaptureSession previewSession;
     public MediaRecorder mediaRecorder;
     private CaptureRequest.Builder previewBuilder;
@@ -41,10 +40,10 @@ internal class MauiCameraView: GridLayout
     private Size videoSize;
     private CameraManager cameraManager;
     private AudioManager audioManager;
-    private HandlerThread backgroundThread;
-    private Handler backgroundHandler;
     private readonly System.Timers.Timer timer;
     private readonly SparseIntArray ORIENTATIONS = new();
+    private CameraCharacteristics camChars;
+    private PreviewCaptureStateCallback sessionCallback;
 
 
     public MauiCameraView(Context context, CameraView cameraView) : base(context)
@@ -89,7 +88,7 @@ internal class MauiCameraView: GridLayout
                     cameraInfo.Name = "Camera " + id;
                     cameraInfo.Position = CameraPosition.Unknow;
                 }
-                cameraInfo.MaxZoomFactor = (float)(chars.Get(CameraCharacteristics.ScalerAvailableMaxDigitalZoom) as Java.Lang.Number) * 10;
+                cameraInfo.MaxZoomFactor = (float)(chars.Get(CameraCharacteristics.ScalerAvailableMaxDigitalZoom) as Java.Lang.Number);
                 cameraInfo.HasFlashUnit = (bool)(chars.Get(CameraCharacteristics.FlashInfoAvailable) as Java.Lang.Boolean);
                 Cameras.Add(cameraInfo);
             }
@@ -111,7 +110,7 @@ internal class MauiCameraView: GridLayout
         }
     }
 
-    public async Task<CameraResult> StartRecordingAsync(string file)
+    internal async Task<CameraResult> StartRecordingAsync(string file)
     {
         var result = CameraResult.Success;
         if (initiated && !recording)
@@ -121,9 +120,9 @@ internal class MauiCameraView: GridLayout
                 if (started) StopCamera();
                 if (Camera != null)
                 {
-                    CameraCharacteristics characteristics = cameraManager.GetCameraCharacteristics(Camera.DeviceId);
+                    camChars = cameraManager.GetCameraCharacteristics(Camera.DeviceId);
 
-                    StreamConfigurationMap map = (StreamConfigurationMap)characteristics.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
+                    StreamConfigurationMap map = (StreamConfigurationMap)camChars.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
                     videoSize = ChooseVideoSize(map.GetOutputSizes(Class.FromType(typeof(ImageReader))));
                     AdjustAspectRatio(videoSize.Width, videoSize.Height);
 
@@ -140,10 +139,14 @@ internal class MauiCameraView: GridLayout
                     mediaRecorder.SetOutputFile(file);
                     mediaRecorder.SetVideoEncodingBitRate(10000000);
                     mediaRecorder.SetVideoFrameRate(30);
-                    mediaRecorder.SetVideoSize(videoSize.Width, videoSize.Height);
+                    if (videoSize.Width >= 1920)
+                        mediaRecorder.SetVideoSize(1920, 1080);
+                    else
+                        mediaRecorder.SetVideoSize(videoSize.Width, videoSize.Height);
                     mediaRecorder.SetVideoEncoder(VideoEncoder.H264);
                     mediaRecorder.SetAudioEncoder(AudioEncoder.Aac);
-                    int rotation = (int)((IWindowManager)context.GetSystemService(Context.WindowService)).DefaultDisplay.Rotation;
+                    IWindowManager windowManager = context.GetSystemService(Context.WindowService).JavaCast<IWindowManager>();
+                    int rotation = (int)windowManager.DefaultDisplay.Rotation;
                     int orientation = ORIENTATIONS.Get(rotation);
                     mediaRecorder.SetOrientationHint(orientation);
                     mediaRecorder.Prepare();
@@ -168,15 +171,7 @@ internal class MauiCameraView: GridLayout
         while (textureView.SurfaceTexture == null) Thread.Sleep(100);
         SurfaceTexture texture = textureView.SurfaceTexture;
         texture.SetDefaultBufferSize(videoSize.Width, videoSize.Height);
-        /*
-        bool isSwappedDimension = IsDimensionSwapped();
-        var previewSize = SetupPreviewSize(isSwappedDimension);
-        texture.SetDefaultBufferSize(previewSize.Width, previewSize.Height);
-        if (isSwappedDimension)
-            MainThread.InvokeOnMainThreadAsync(() => textureView.SetAspectRatio(previewSize.Height, previewSize.Width)).Wait();
-        else
-            MainThread.InvokeOnMainThreadAsync(() => textureView.SetAspectRatio(previewSize.Width, previewSize.Height)).Wait();
-        */
+
         previewBuilder = cameraDevice.CreateCaptureRequest(recording ? CameraTemplate.Record : CameraTemplate.Preview);
         var surfaces = new List<OutputConfiguration>();
         var previewSurface = new Surface(texture);
@@ -188,10 +183,11 @@ internal class MauiCameraView: GridLayout
             previewBuilder.AddTarget(mediaRecorder.Surface);
         }
 
-        SessionConfiguration config = new((int)SessionType.Regular,surfaces,executorService, new PreviewCaptureStateCallback(this));
+        sessionCallback = new PreviewCaptureStateCallback(this);
+        SessionConfiguration config = new((int)SessionType.Regular,surfaces,executorService, sessionCallback);
         cameraDevice.CreateCaptureSession(config);
     }
-    public void UpdatePreview()
+    private void UpdatePreview()
     {
         if (null == cameraDevice)
             return;
@@ -199,15 +195,20 @@ internal class MauiCameraView: GridLayout
         try
         {
             previewBuilder.Set(CaptureRequest.ControlMode, Java.Lang.Integer.ValueOf((int)ControlMode.Auto));
+            Rect m = (Rect)camChars.Get(CameraCharacteristics.SensorInfoActiveArraySize);
+            videoSize = new Size(m.Width(), m.Height());
+            AdjustAspectRatio(videoSize.Width, videoSize.Height);
+
             previewSession.SetRepeatingRequest(previewBuilder.Build(), null, null);
-            if (recording) mediaRecorder?.Start();
+            if (recording) 
+                mediaRecorder?.Start();
         }
         catch (CameraAccessException e)
         {
             e.PrintStackTrace();
         }
     }
-    public async Task<CameraResult> StartCameraAsync()
+    internal async Task<CameraResult> StartCameraAsync()
     {
         var result = CameraResult.Success;
         if (initiated)
@@ -217,12 +218,10 @@ internal class MauiCameraView: GridLayout
                 if (started) StopCamera();
                 if (Camera != null)
                 {
-                    CameraCharacteristics characteristics = cameraManager.GetCameraCharacteristics(Camera.DeviceId);
+                    camChars = cameraManager.GetCameraCharacteristics(Camera.DeviceId);
 
-                    StreamConfigurationMap map = (StreamConfigurationMap)characteristics.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
-                    //videoSize = ChooseVideoSize(map.GetOutputSizes(Class.FromType(typeof(ImageReader))));
-                    videoSize = new Size(1920, 1080);
-                    AdjustAspectRatio(videoSize.Width, videoSize.Height);
+                    StreamConfigurationMap map = (StreamConfigurationMap)camChars.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
+                    videoSize = ChooseVideoSize(map.GetOutputSizes(Class.FromType(typeof(ImageReader))));
                     cameraManager.OpenCamera(Camera.DeviceId, executorService, stateListener);
                     timer.Start();
                     started = true;
@@ -238,13 +237,13 @@ internal class MauiCameraView: GridLayout
 
         return result;
     }
-    public Task<CameraResult> StopRecordingAsync()
+    internal Task<CameraResult> StopRecordingAsync()
     {
         recording = false;
         return StartCameraAsync();
     }
 
-    public CameraResult StopCamera()
+    internal CameraResult StopCamera()
     {
         CameraResult result = CameraResult.Success;
         if (initiated)
@@ -265,14 +264,6 @@ internal class MauiCameraView: GridLayout
                 cameraDevice?.Close();
                 cameraDevice?.Dispose();
             } catch { }
-            try
-            {
-                backgroundThread?.Quit();
-                backgroundHandler?.Dispose();
-                backgroundThread?.Dispose();
-            } catch { }
-            backgroundThread = null;
-            backgroundHandler = null;
             previewSession = null;
             cameraDevice = null;
             previewBuilder = null;
@@ -284,7 +275,7 @@ internal class MauiCameraView: GridLayout
             result = CameraResult.NotInitiated;
         return result;
     }
-    public void DisposeControl()
+    internal void DisposeControl()
     {
         if (started) StopCamera();
         executorService?.Shutdown();
@@ -343,7 +334,8 @@ internal class MauiCameraView: GridLayout
                 bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, bitmap.Width, bitmap.Height, textureView.GetTransform(null), false);
                 float xscale = (float)oriWidth / bitmap.Width;
                 float yscale = (float)oriHeight / bitmap.Height;
-                bitmap = Bitmap.CreateBitmap(bitmap, Math.Abs(bitmap.Width - (int)((float)Width*xscale)) / 2, Math.Abs(bitmap.Height - (int)((float)Height * yscale)) / 2, Width, Height);
+                //bitmap = Bitmap.CreateBitmap(bitmap, Math.Abs(bitmap.Width - (int)((float)Width*xscale)) / 2, Math.Abs(bitmap.Height - (int)((float)Height * yscale)) / 2, Width, Height);
+                bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, Width, Height);
                 if (textureView.ScaleX == -1)
                 {
                     Matrix matrix = new();
@@ -426,7 +418,7 @@ internal class MauiCameraView: GridLayout
         return result;
     }
 
-    public bool SaveSnapShot(ImageFormat imageFormat, string SnapFilePath)
+    internal bool SaveSnapShot(ImageFormat imageFormat, string SnapFilePath)
     {
         bool result = true;
 
@@ -453,7 +445,7 @@ internal class MauiCameraView: GridLayout
 
         return result;
     }
-    public async void UpdateCamera()
+    internal async void UpdateCamera()
     {
         if (cameraView != null && cameraView.Camera != null)
         {
@@ -476,7 +468,7 @@ internal class MauiCameraView: GridLayout
                 textureView.ScaleX = 1;
         }
     }
-    public void UpdateTorch()
+    internal void UpdateTorch()
     {
         if (Camera != null && Camera.HasFlashUnit)
         {
@@ -490,7 +482,7 @@ internal class MauiCameraView: GridLayout
                 cameraManager.SetTorchMode(Camera.DeviceId, cameraView.TorchEnabled);
         }
     }
-    public void UpdateFlashMode()
+    internal void UpdateFlashMode()
     {
         if (previewSession != null && previewBuilder != null && Camera != null && cameraView != null)
         {
@@ -520,15 +512,23 @@ internal class MauiCameraView: GridLayout
             }
         }
     }
-    public void SetZoomFactor(float zoom)
+    internal void SetZoomFactor(float zoom)
     {
         if (previewSession != null && previewBuilder != null && Camera != null)
         {
-            if (OperatingSystem.IsAndroidVersionAtLeast(30))
-            {
-                previewBuilder.Set(CaptureRequest.ControlZoomRatio, Math.Max(Camera.MinZoomFactor, Math.Min(zoom, Camera.MaxZoomFactor)));
-                previewSession.SetRepeatingRequest(previewBuilder.Build(), null, null);
-            }
+            //if (OperatingSystem.IsAndroidVersionAtLeast(30))
+            //{
+            //previewBuilder.Set(CaptureRequest.ControlZoomRatio, Math.Max(Camera.MinZoomFactor, Math.Min(zoom, Camera.MaxZoomFactor)));
+            //}
+            var destZoom = Math.Clamp(zoom, 1, Math.Min(6, Camera.MaxZoomFactor)) - 1;
+            Rect m = (Rect)camChars.Get(CameraCharacteristics.SensorInfoActiveArraySize);
+            int minW = (int)(m.Width() / (Camera.MaxZoomFactor));
+            int minH = (int)(m.Height() / (Camera.MaxZoomFactor));
+            int newWidth = (int)(m.Width() - (minW * destZoom));
+            int newHeight = (int)(m.Height() - (minH * destZoom));
+            Rect zoomArea = new Rect((m.Width()-newWidth)/2, (m.Height()-newHeight)/2, newWidth, newHeight);
+            previewBuilder.Set(CaptureRequest.ScalerCropRegion, zoomArea);
+            previewSession.SetRepeatingRequest(previewBuilder.Build(), null, null);
         }
     }
 
@@ -581,22 +581,14 @@ internal class MauiCameraView: GridLayout
     private void AdjustAspectRatio(int videoWidth, int videoHeight)
     {
         Matrix txform = new();
-        float centerX = Math.Max((videoWidth - Width) / 2, 0);
-        float centerY = Math.Max((videoHeight - Height) / 2, 0);
-        //float scaleX = Width >= Height ? 1 : (float)videoHeight / Height;
-        //float scaleY = Width >= Height ? (float)videoWidth / Width : 1;
-
         float scaleX = (float)videoWidth / Width;
         float scaleY = (float)videoHeight / Height;
         if (IsDimensionSwapped())
         {
             scaleX = (float)videoHeight / Width;
             scaleY = (float)videoWidth / Height;
-            centerX = Math.Max((videoHeight - Width) / 2, 0);
-            centerY = Math.Max((videoWidth - Height) / 2, 0);
         }
-        //var minzoom = (float)Math.Min(Math.Truncate(scaleX), Math.Truncate(scaleY)) - 1f;
-        if (ScaleX <= scaleY)
+        if (scaleX <= scaleY)
         {
             scaleY /= scaleX;
             scaleX = 1;
@@ -606,16 +598,16 @@ internal class MauiCameraView: GridLayout
             scaleX /= scaleY;
             scaleY = 1;
         }
-        txform.PostScale(scaleX, scaleY, centerX, centerY);
-        //txform.PostScale(scaleX, scaleY, 0, 0);
+        txform.PostScale(scaleX, scaleY, 0, 0);
         textureView.SetTransform(txform);
     }
 
     private bool IsDimensionSwapped()
     {
-        var displayRotation = ((IWindowManager)context.GetSystemService(Context.WindowService)).DefaultDisplay.Rotation;
+        IWindowManager windowManager = context.GetSystemService(Context.WindowService).JavaCast<IWindowManager>();
+        var displayRotation = windowManager.DefaultDisplay.Rotation;
         var chars = cameraManager.GetCameraCharacteristics(Camera.DeviceId);
-        var sensorOrientation = (int)(chars.Get(CameraCharacteristics.SensorOrientation) as Java.Lang.Number);
+        int sensorOrientation = (int)(chars.Get(CameraCharacteristics.SensorOrientation) as Java.Lang.Integer);
         bool swappedDimensions = false;
         switch(displayRotation)
         {
@@ -637,46 +629,7 @@ internal class MauiCameraView: GridLayout
 
         return swappedDimensions;
     }
-
-    private Size SetupPreviewSize(bool isDimensionSwapped)
-    {
-        var largest = GetCaptureSize();
-
-        var displaySize = new Point();
-        ((IWindowManager)context.GetSystemService(Context.WindowService)).DefaultDisplay.GetRealSize(displaySize);
-        if (isDimensionSwapped)
-            return GetOptimalSize(Height, Width, displaySize.Y, displaySize.X, largest);
-        else
-            return GetOptimalSize(Width, Height, displaySize.X, displaySize.Y, largest);
-    }
-
-    private Size GetCaptureSize()
-    {
-        var chars = cameraManager.GetCameraCharacteristics(Camera.DeviceId);
-        StreamConfigurationMap map = (StreamConfigurationMap)chars.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
-        var supportedSizes = map.GetOutputSizes((int)ImageFormatType.Jpeg);
-
-        return supportedSizes.First();
-    }
-
-    private Size GetOptimalSize(int textureViewWidth, int textureViewHeight, int maxWidth, int maxHeight, Size aspectRatio)
-    {
-        var chars = cameraManager.GetCameraCharacteristics(Camera.DeviceId);
-        StreamConfigurationMap map = (StreamConfigurationMap)chars.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
-        var supportedPreviewSizes = map.GetOutputSizes(Class.FromType(typeof(SurfaceTexture)));
-        var bigEnough = new List<Size>();
-        Size minSize = new Size(10000, 10000);
-        foreach (var option in supportedPreviewSizes)
-        {
-            if (option.Width <= maxWidth && option.Height <= maxHeight && option.Height == option.Width * aspectRatio.Height / aspectRatio.Width)
-            {
-                bigEnough.Add(option);
-                if (option.Height * option.Width >= minSize.Height * minSize.Width)
-                    minSize = option;
-            }
-        }
-        return minSize;
-    }
+    /*
     private class AutoFitTextureView : TextureView
     {
         private int mRatioWidth = 0;
@@ -727,6 +680,7 @@ internal class MauiCameraView: GridLayout
             }
         }
     }
+    */
     private class MyCameraStateCallback : CameraDevice.StateCallback
     {
         private readonly MauiCameraView cameraView;
@@ -752,6 +706,7 @@ internal class MauiCameraView: GridLayout
             cameraView.cameraDevice = null;
         }
     }
+
     private class PreviewCaptureStateCallback : CameraCaptureSession.StateCallback
     {
         private readonly MauiCameraView cameraView;
