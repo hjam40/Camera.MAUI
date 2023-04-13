@@ -273,6 +273,10 @@ public class CameraView : View, ICameraView
     /// Event launched when "Microphones" property has been loaded.
     /// </summary>
     public event EventHandler MicrophonesLoaded;
+    /// <summary>
+    /// A static reference to the last CameraView created.
+    /// </summary>
+    public static CameraView Current { get; set; }
 
     private readonly BarcodeReaderGeneric BarcodeReader;
     internal DateTime lastSnapshot = DateTime.Now;
@@ -281,6 +285,7 @@ public class CameraView : View, ICameraView
     {
         BarcodeReader = new BarcodeReaderGeneric();
         HandlerChanged += CameraView_HandlerChanged;
+        Current = this;
     }
     private void CameraView_HandlerChanged(object sender, EventArgs e)
     {

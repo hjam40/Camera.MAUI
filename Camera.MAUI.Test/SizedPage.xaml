@@ -8,7 +8,7 @@
     <ScrollView>
         <Grid>
             <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-                <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="300" />
+                <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="300" ZoomFactor="4" />
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
                     <Label x:Name="cameraLabel" Text="Select a camera:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black"/>
                     <Picker x:Name="cameraPicker" VerticalOptions="Center" TextColor="Black" SelectedIndexChanged="CameraPicker_SelectedIndexChanged"/>

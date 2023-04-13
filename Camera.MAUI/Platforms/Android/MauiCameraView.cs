@@ -198,8 +198,8 @@ internal class MauiCameraView: GridLayout
             Rect m = (Rect)camChars.Get(CameraCharacteristics.SensorInfoActiveArraySize);
             videoSize = new Size(m.Width(), m.Height());
             AdjustAspectRatio(videoSize.Width, videoSize.Height);
-
-            previewSession.SetRepeatingRequest(previewBuilder.Build(), null, null);
+            SetZoomFactor(cameraView.ZoomFactor);
+            //previewSession.SetRepeatingRequest(previewBuilder.Build(), null, null);
             if (recording) 
                 mediaRecorder?.Start();
         }

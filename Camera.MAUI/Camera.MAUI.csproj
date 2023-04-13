@@ -29,7 +29,7 @@
 		<Authors>hjam40</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<Version>1.3.3</Version>
+		<Version>1.3.4</Version>
 		<PackageReleaseNotes>Added Take photo.
 Changed Android preview aspect ratio</PackageReleaseNotes>
 	</PropertyGroup>
