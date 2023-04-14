@@ -350,16 +350,12 @@ public class CameraView : View, ICameraView
         }
         catch {}
     }
-    private static async void CameraChanged(BindableObject bindable, object oldValue, object newValue)
+    private static void CameraChanged(BindableObject bindable, object oldValue, object newValue)
     {
         if (newValue != null && oldValue != newValue && bindable is CameraView cameraView && newValue is CameraInfo)
         {
             cameraView.OnPropertyChanged(nameof(MinZoomFactor));
             cameraView.OnPropertyChanged(nameof(MaxZoomFactor));
-            if (cameraView.AutoStartPreview)
-            {
-                await cameraView.StartCameraAsync();
-            }
         }
     }
     private static void TakeAutoSnapShotChanged(BindableObject bindable, object oldValue, object newValue)

@@ -15,17 +15,13 @@ namespace Camera.MAUI.Platforms.Apple;
 
 internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDelegate, IAVCaptureFileOutputRecordingDelegate, IAVCapturePhotoCaptureDelegate
 {
-    private CameraInfo Camera { get; set; }
-    private readonly List<CameraInfo> Cameras = new();
-    private readonly List<MicrophoneInfo> Micros = new();
-    private MicrophoneInfo Microphone { get; set; }
     private AVCaptureDevice[] camDevices;
     private AVCaptureDevice[] micDevices;
     private readonly CameraView cameraView;
     private readonly AVCaptureVideoPreviewLayer PreviewLayer;
     private readonly AVCaptureVideoDataOutput videoDataOutput;
     private AVCaptureMovieFileOutput recordOutput;
-    private AVCapturePhotoOutput photoOutput;
+    private readonly AVCapturePhotoOutput photoOutput;
     private readonly AVCaptureSession captureSession;
     private AVCaptureDevice captureDevice;
     private AVCaptureDevice micDevice;
@@ -81,6 +77,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             {
                 var deviceDescoverySession = AVCaptureDeviceDiscoverySession.Create(new AVCaptureDeviceType[] { AVCaptureDeviceType.BuiltInWideAngleCamera }, AVMediaTypes.Video, AVCaptureDevicePosition.Unspecified);
                 camDevices = deviceDescoverySession.Devices;
+                cameraView.Cameras.Clear();
                 foreach (var device in camDevices)
                 {
                     CameraPosition position = device.Position switch
@@ -89,30 +86,25 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         AVCaptureDevicePosition.Front => CameraPosition.Front,
                         _ => CameraPosition.Unknow
                     };
-                    Cameras.Add(new CameraInfo 
-                    { 
-                        Name = device.LocalizedName, DeviceId = device.UniqueID, Position = position,
+                    cameraView.Cameras.Add(new CameraInfo
+                    {
+                        Name = device.LocalizedName,
+                        DeviceId = device.UniqueID,
+                        Position = position,
                         HasFlashUnit = device.FlashAvailable,
                         MinZoomFactor = (float)device.MinAvailableVideoZoomFactor,
                         MaxZoomFactor = (float)device.MaxAvailableVideoZoomFactor
                     });
                 }
-                Camera = Cameras.FirstOrDefault();
                 deviceDescoverySession.Dispose();
                 var aSession = AVCaptureDeviceDiscoverySession.Create(new AVCaptureDeviceType[] { AVCaptureDeviceType.BuiltInMicrophone }, AVMediaTypes.Audio, AVCaptureDevicePosition.Unspecified);
                 micDevices = aSession.Devices;
+                cameraView.Microphones.Clear();
                 foreach (var device in micDevices)
-                    Micros.Add(new MicrophoneInfo { Name = device.LocalizedName, DeviceId = device.UniqueID });
-                Microphone = Micros.FirstOrDefault();
+                    cameraView.Microphones.Add(new MicrophoneInfo { Name = device.LocalizedName, DeviceId = device.UniqueID });
                 aSession.Dispose();
                 initiated = true;
-                if (cameraView != null)
-                {
-                    cameraView.Cameras.Clear();
-                    foreach (var micro in Micros) cameraView.Microphones.Add(micro);
-                    foreach (var cam in Cameras) cameraView.Cameras.Add(cam);
-                    cameraView.RefreshDevices();
-                }
+                cameraView.RefreshDevices();
             }
             catch
             {
@@ -127,15 +119,15 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             if (started) StopCamera();
             if (await CameraView.RequestPermissions(true))
             {
-                if (Camera != null && captureSession != null)
+                if (cameraView.Camera != null && cameraView.Microphone != null && captureSession != null)
                 {
                     try
                     {
                         frames = 0;
-                        captureDevice = camDevices.First(d => d.UniqueID == Camera.DeviceId);
+                        captureDevice = camDevices.First(d => d.UniqueID == cameraView.Camera.DeviceId);
                         captureInput = new AVCaptureDeviceInput(captureDevice, out var err);
                         captureSession.AddInput(captureInput);
-                        micDevice = micDevices.First(d => d.UniqueID == Microphone.DeviceId);
+                        micDevice = micDevices.First(d => d.UniqueID == cameraView.Microphone.DeviceId);
                         micInput = new AVCaptureDeviceInput(micDevice, out err);
                         captureSession.AddInput(micInput);
 
@@ -181,12 +173,12 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             if (started) StopCamera();
             if (await CameraView.RequestPermissions())
             {
-                if (Camera != null && captureSession != null)
+                if (cameraView.Camera != null && captureSession != null)
                 {
                     try
                     {
                         frames = 0;
-                        captureDevice = camDevices.First(d => d.UniqueID == Camera.DeviceId);
+                        captureDevice = camDevices.First(d => d.UniqueID == cameraView.Camera.DeviceId);
                         captureInput = new AVCaptureDeviceInput(captureDevice, out var err);
                         captureSession.AddInput(captureInput);
                         captureSession.AddOutput(videoDataOutput);
@@ -228,7 +220,8 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         recordOutput.Dispose();
                         recordOutput = null;
                     }
-                    captureSession.RemoveOutput(videoDataOutput);
+                    foreach (var output in captureSession.Outputs)
+                        captureSession.RemoveOutput(output);
                     foreach (var input in captureSession.Inputs)
                     {
                         captureSession.RemoveInput(input);
@@ -254,19 +247,6 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         captureSession?.Dispose();
         Dispose();
     }
-    public async void UpdateCamera()
-    {
-        if (cameraView != null && cameraView.Camera != null)
-        {
-            if (started)
-            {
-                StopCamera();
-                Camera = cameraView.Camera;
-                await StartCameraAsync();
-            }else
-                Camera = cameraView.Camera;
-        }
-    }
     public void UpdateMirroredImage()
     {
         if (cameraView != null && PreviewLayer.Connection != null)
@@ -283,12 +263,12 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     }
     public void SetZoomFactor(float zoom)
     {
-        if (Camera != null && captureDevice != null)
+        if (cameraView.Camera != null && captureDevice != null)
         {
             captureDevice.LockForConfiguration(out NSError error);
             if (error == null)
             {
-                captureDevice.VideoZoomFactor = Math.Max(Camera.MinZoomFactor, Math.Min(zoom, Camera.MaxZoomFactor));
+                captureDevice.VideoZoomFactor = Math.Clamp(zoom, cameraView.Camera.MinZoomFactor, cameraView.Camera.MaxZoomFactor);
                 captureDevice.UnlockForConfiguration();
             }
         }

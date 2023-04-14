@@ -16,7 +16,6 @@ internal partial class CameraViewHandler : ViewHandler<CameraView, PlatformView>
     public static IPropertyMapper<CameraView, CameraViewHandler> PropertyMapper = new PropertyMapper<CameraView, CameraViewHandler>(ViewMapper)
     {
         [nameof(CameraView.TorchEnabled)] = MapTorch,
-        [nameof(CameraView.Camera)] = MapCamera,
         [nameof(CameraView.MirroredImage)] = MapMirroredImage,
         [nameof(CameraView.ZoomFactor)] = MapZoomFactor,
     };
@@ -51,12 +50,6 @@ internal partial class CameraViewHandler : ViewHandler<CameraView, PlatformView>
     {
 #if WINDOWS || ANDROID || IOS || MACCATALYST
         handler.PlatformView?.UpdateTorch();
-#endif
-    }
-    public static void MapCamera(CameraViewHandler handler, CameraView cameraView)
-    {
-#if WINDOWS || ANDROID || IOS || MACCATALYST
-        handler.PlatformView?.UpdateCamera();
 #endif
     }
     public static void MapMirroredImage(CameraViewHandler handler, CameraView cameraView)

@@ -11,11 +11,6 @@ namespace Camera.MAUI.Platforms.Windows;
 
 public sealed partial class MauiCameraView : UserControl, IDisposable
 {
-    private readonly List<CameraInfo> Cameras = new();
-    private readonly List<MicrophoneInfo> Micros = new();
-    private CameraInfo Camera { get; set; }
-    private MicrophoneInfo Microphone { get; set; }
-
     private readonly MediaPlayerElement mediaElement;
     private MediaCapture mediaCapture;
     private MediaFrameSource frameSource;
@@ -42,19 +37,6 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
         Content = mediaElement;
         InitDevices();
     }
-    internal async void UpdateCamera()
-    {
-        if (cameraView != null && cameraView.Camera != null)
-        {
-            if (started)
-            {
-                await StopCameraAsync();
-                Camera = cameraView.Camera;
-                await StartCameraAsync();
-            }else
-                Camera = cameraView.Camera;
-        }
-    }
     internal void UpdateMirroredImage()
     {
         if (cameraView != null)
@@ -68,9 +50,9 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
     }
     internal void SetZoomFactor(float zoom)
     {
-        if (Camera != null && frameSource != null && frameSource.Controller.VideoDeviceController.ZoomControl.Supported)
+        if (cameraView.Camera != null && frameSource != null && frameSource.Controller.VideoDeviceController.ZoomControl.Supported)
         {
-            frameSource.Controller.VideoDeviceController.ZoomControl.Value = Math.Max(Camera.MinZoomFactor, Math.Min(zoom, Camera.MaxZoomFactor));
+            frameSource.Controller.VideoDeviceController.ZoomControl.Value = Math.Clamp(zoom, cameraView.Camera.MinZoomFactor, cameraView.Camera.MaxZoomFactor);
         }
     }
     internal void UpdateFlashMode()
@@ -115,6 +97,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                 sGroups = mediaGroups.Where(g => g.SourceInfos.Any(s => s.SourceKind == MediaFrameSourceKind.Color &&
                                                                                     (s.MediaStreamType == MediaStreamType.VideoPreview || s.MediaStreamType == MediaStreamType.VideoRecord))
                                                                                     && g.SourceInfos.All(sourceInfo => vDevices.Any(vd => vd.Id == sourceInfo.DeviceInformation.Id))).ToList();
+                cameraView.Cameras.Clear();
                 foreach (var s in sGroups)
                 {
                     CameraPosition position = CameraPosition.Unknow;
@@ -130,7 +113,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                             };
                     }
                     mediaCapture = new MediaCapture();
-                    
+
                     mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
                     {
                         SourceGroup = s,
@@ -139,7 +122,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                     }).GetAwaiter().GetResult();
                     frameSource = mediaCapture.FrameSources.FirstOrDefault(source => source.Value.Info.MediaStreamType == MediaStreamType.VideoRecord
                                                                                           && source.Value.Info.SourceKind == MediaFrameSourceKind.Color).Value;
-                    Cameras.Add(new CameraInfo
+                    cameraView.Cameras.Add(new CameraInfo
                     {
                         Name = s.DisplayName,
                         DeviceId = s.Id,
@@ -149,25 +132,17 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                         MaxZoomFactor = frameSource.Controller.VideoDeviceController.ZoomControl.Supported ? frameSource.Controller.VideoDeviceController.ZoomControl.Max : 1f
                     });
                 }
-                Camera = Cameras.FirstOrDefault();
 
                 var aDevices = DeviceInformation.FindAllAsync(DeviceClass.AudioCapture).GetAwaiter().GetResult();
+                cameraView.Microphones.Clear();
                 foreach (var device in aDevices)
-                    Micros.Add(new MicrophoneInfo { Name = device.Name, DeviceId = device.Id });
-                Microphone = Micros.FirstOrDefault();
+                    cameraView.Microphones.Add(new MicrophoneInfo { Name = device.Name, DeviceId = device.Id });
 
                 initiated = true;
-                if (cameraView != null)
-                {
-                    cameraView.Cameras.Clear();
-                    foreach (var micro in Micros) cameraView.Microphones.Add(micro);
-                    foreach (var cam in Cameras) cameraView.Cameras.Add(cam);
-                    cameraView.RefreshDevices();
-                }
+                cameraView.RefreshDevices();
             }
             catch
             {
-                Camera = null;
             }
         }
     }
@@ -178,7 +153,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
         if (initiated)
         {
             if (started) await StopCameraAsync();
-            if (Camera != null && Microphone != null)
+            if (cameraView.Camera != null && cameraView.Microphone != null)
             {
                 started = true;
 
@@ -187,9 +162,9 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                 {
                     await mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
                     {
-                        VideoDeviceId = Camera.DeviceId,
+                        VideoDeviceId = cameraView.Camera.DeviceId,
                         MemoryPreference = MediaCaptureMemoryPreference.Cpu,
-                        AudioDeviceId = Microphone.DeviceId
+                        AudioDeviceId = cameraView.Microphone.DeviceId
                     });
 
                     MediaEncodingProfile profile = MediaEncodingProfile.CreateMp4(VideoEncodingQuality.Auto);
@@ -221,7 +196,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                 }
             }
             else
-                result = Camera == null ? CameraResult.NoCameraSelected : CameraResult.NoMicrophoneSelected;
+                result = cameraView.Camera == null ? CameraResult.NoCameraSelected : CameraResult.NoMicrophoneSelected;
         }
         else
             result = CameraResult.NotInitiated;
@@ -239,7 +214,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
         if (initiated)
         {
             if (started) await StopCameraAsync();
-            if (Camera != null)
+            if (cameraView.Camera != null)
             {
                 started = true;
                 mediaCapture = new MediaCapture();
@@ -247,7 +222,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                 {
                     await mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
                     {
-                        SourceGroup = sGroups.First(s => s.Id == Camera.DeviceId),
+                        SourceGroup = sGroups.First(s => s.Id == cameraView.Camera.DeviceId),
                         MemoryPreference = MediaCaptureMemoryPreference.Cpu,
                         StreamingCaptureMode = StreamingCaptureMode.Video
                     });
