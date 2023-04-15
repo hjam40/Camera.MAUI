@@ -6,6 +6,7 @@ using Windows.Media.Core;
 using Windows.Graphics.Imaging;
 using Panel = Windows.Devices.Enumeration.Panel;
 using Windows.Media.MediaProperties;
+using Windows.Media.Devices;
 
 namespace Camera.MAUI.Platforms.Windows;
 
@@ -53,6 +54,14 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
         if (cameraView.Camera != null && frameSource != null && frameSource.Controller.VideoDeviceController.ZoomControl.Supported)
         {
             frameSource.Controller.VideoDeviceController.ZoomControl.Value = Math.Clamp(zoom, cameraView.Camera.MinZoomFactor, cameraView.Camera.MaxZoomFactor);
+        }
+    }
+    internal void ForceAutoFocus()
+    {
+        if (cameraView.Camera != null && frameSource != null && frameSource.Controller.VideoDeviceController.FocusControl.Supported)
+        {
+            frameSource.Controller.VideoDeviceController.FocusControl.SetPresetAsync(FocusPreset.Manual).GetAwaiter().GetResult();
+            frameSource.Controller.VideoDeviceController.FocusControl.SetPresetAsync(FocusPreset.Auto).GetAwaiter().GetResult();
         }
     }
     internal void UpdateFlashMode()

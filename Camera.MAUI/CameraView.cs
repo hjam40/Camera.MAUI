@@ -522,6 +522,16 @@ public class CameraView : View, ICameraView
         }
         return result;
     }
+    /// <summary>
+    /// Force execute the camera autofocus trigger.
+    /// </summary>
+    public void ForceAutoFocus()
+    {
+        if (Handler != null && Handler is CameraViewHandler handler)
+        {
+            handler.ForceAutoFocus();
+        }
+    }
     internal void RefreshDevices()
     {
         Task.Run(() => { 

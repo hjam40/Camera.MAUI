@@ -190,4 +190,9 @@ public partial class SizedPage : ContentPage
             snapPreview.Source = result;
         }
     }
+
+    private void Button_Clicked_1(object sender, EventArgs e)
+    {
+        cameraView.ForceAutoFocus();
+    }
 }

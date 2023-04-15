@@ -145,4 +145,13 @@ internal partial class CameraViewHandler : ViewHandler<CameraView, PlatformView>
         }
         return Task.Run(() => { return false; });
     }
+    public void ForceAutoFocus()
+    {
+        if (PlatformView != null)
+        {
+#if ANDROID || WINDOWS || IOS || MACCATALYST
+            PlatformView.ForceAutoFocus();
+#endif
+        }
+    }
 }

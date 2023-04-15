@@ -12,6 +12,7 @@ using Size = Android.Util.Size;
 using Class = Java.Lang.Class;
 using Rect = Android.Graphics.Rect;
 using Android.Runtime;
+using static Android.Hardware.Camera;
 
 namespace Camera.MAUI.Platforms.Android;
 
@@ -523,7 +524,19 @@ internal class MauiCameraView: GridLayout
             previewSession.SetRepeatingRequest(previewBuilder.Build(), null, null);
         }
     }
+    internal void ForceAutoFocus()
+    {
+        if (previewSession != null && previewBuilder != null && cameraView.Camera != null)
+        {
+            previewBuilder.Set(CaptureRequest.ControlAfMode, Java.Lang.Integer.ValueOf((int)ControlAFMode.Off));
+            previewBuilder.Set(CaptureRequest.ControlAfTrigger, Java.Lang.Integer.ValueOf((int)ControlAFTrigger.Cancel));
+            previewSession.SetRepeatingRequest(previewBuilder.Build(), null, null);
+            previewBuilder.Set(CaptureRequest.ControlAfMode, Java.Lang.Integer.ValueOf((int)ControlAFMode.Auto));
+            previewBuilder.Set(CaptureRequest.ControlAfTrigger, Java.Lang.Integer.ValueOf((int)ControlAFTrigger.Start));
+            previewSession.SetRepeatingRequest(previewBuilder.Build(), null, null);
 
+        }
+    }
     private static Size ChooseVideoSize(Size[] choices)
     {
         Size result = choices[0];

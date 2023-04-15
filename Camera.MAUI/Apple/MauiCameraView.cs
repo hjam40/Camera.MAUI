@@ -261,7 +261,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             UpdateTorch();
         }
     }
-    public void SetZoomFactor(float zoom)
+    internal void SetZoomFactor(float zoom)
     {
         if (cameraView.Camera != null && captureDevice != null)
         {
@@ -269,6 +269,21 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             if (error == null)
             {
                 captureDevice.VideoZoomFactor = Math.Clamp(zoom, cameraView.Camera.MinZoomFactor, cameraView.Camera.MaxZoomFactor);
+                captureDevice.UnlockForConfiguration();
+            }
+        }
+    }
+    internal void ForceAutoFocus()
+    {
+        if (cameraView.Camera != null && captureDevice != null && captureDevice.IsFocusModeSupported(AVCaptureFocusMode.AutoFocus))
+        {
+            captureDevice.LockForConfiguration(out NSError error);
+            if (error == null)
+            {
+                if (captureDevice.IsFocusModeSupported(AVCaptureFocusMode.ContinuousAutoFocus))
+                    captureDevice.FocusMode = AVCaptureFocusMode.ContinuousAutoFocus;
+                else
+                    captureDevice.FocusMode = AVCaptureFocusMode.AutoFocus;
                 captureDevice.UnlockForConfiguration();
             }
         }

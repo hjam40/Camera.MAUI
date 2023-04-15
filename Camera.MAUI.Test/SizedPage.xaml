@@ -8,7 +8,7 @@
     <ScrollView>
         <Grid>
             <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-                <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="300" ZoomFactor="4" />
+                <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="300" />
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
                     <Label x:Name="cameraLabel" Text="Select a camera:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black"/>
                     <Picker x:Name="cameraPicker" VerticalOptions="Center" TextColor="Black" SelectedIndexChanged="CameraPicker_SelectedIndexChanged"/>
@@ -36,6 +36,7 @@
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="2" Spacing="2">
                     <Label x:Name="zoomLabel" Text="Zoom" VerticalOptions="Center" TextColor="Black"/>
                     <Stepper x:Name="zoomStepper" BindingContext="{x:Reference cameraView}" Minimum="{Binding MinZoomFactor}" Maximum="1.1" Increment="0.5" Value="1" ValueChanged="Stepper_ValueChanged"/>
+                    <Button Text="Focus" Clicked="Button_Clicked_1" />
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
                     <Button Text="Start Camera" Clicked="OnStartClicked" />
