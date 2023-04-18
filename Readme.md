@@ -264,7 +264,7 @@ A ContentView control for generate codebars images.
 
 In XAML, make sure to add the right XML namespace:
 
-`xmlns:cv="xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`
+`xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`
 
 Use the control and its bindable properties:
 ```xaml
