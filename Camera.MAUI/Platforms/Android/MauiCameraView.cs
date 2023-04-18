@@ -12,7 +12,6 @@ using Size = Android.Util.Size;
 using Class = Java.Lang.Class;
 using Rect = Android.Graphics.Rect;
 using Android.Runtime;
-using static Android.Hardware.Camera;
 
 namespace Camera.MAUI.Platforms.Android;
 
@@ -118,8 +117,6 @@ internal class MauiCameraView: GridLayout
 
                         StreamConfigurationMap map = (StreamConfigurationMap)camChars.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
                         videoSize = ChooseVideoSize(map.GetOutputSizes(Class.FromType(typeof(ImageReader))));
-                        AdjustAspectRatio(videoSize.Width, videoSize.Height);
-
                         recording = true;
 
                         if (OperatingSystem.IsAndroidVersionAtLeast(31))
