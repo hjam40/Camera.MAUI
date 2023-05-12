@@ -117,10 +117,11 @@ CameraInfo has the next properties:
     public bool HasFlashUnit
     public float MinZoomFactor
     public float MaxZoomFactor
+    public List<Size> AvailableResolutions
 ```
 Start camera playback:
 ```csharp
-         if (await cameraView.StartCameraAsync() == CameraResult.Success)
+         if (await cameraView.StartCameraAsync(new Size(1280, 720)) == CameraResult.Success)
          {
              playing = true;
          }
@@ -156,7 +157,7 @@ bool result = cameraView.SaveSnapShot(ImageFormat.PNG, filePath);
 ```
 Record a video:
 ```csharp
-var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4"));
+var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4", new Size(1920, 1080)));
 ....
 result = cameraView.StopRecordingAsync();
 ```
@@ -243,6 +244,8 @@ Enable and Handle barcodes detection:
         TryInverted = true
     };
 	cameraView.BarCodeDetectionFrameRate = 10;
+    cameraView.BarCodeDetectionMaxThreads = 5;
+    cameraView.ControlBarcodeResultDuplicate = true;
 	cameraView.BarCodeDetectionEnabled = true;
 
     private void CameraView_BarcodeDetected(object sender, ZXingHelper.BarcodeEventArgs args)

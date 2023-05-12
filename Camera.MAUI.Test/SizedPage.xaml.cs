@@ -33,9 +33,9 @@ public partial class SizedPage : ContentPage
         cameraView.BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
         {
             AutoRotate = true,
-            PossibleFormats = { ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.EAN_13 },
+            PossibleFormats = { BarcodeFormat.QR_CODE },
             ReadMultipleCodes = false,
-            TryHarder = true,
+            TryHarder = false,
             TryInverted = true
         };
         BindingContext = cameraView;
@@ -66,7 +66,7 @@ public partial class SizedPage : ContentPage
         {
             cameraLabel.BackgroundColor = Colors.White;
             cameraView.Camera = camera;
-            var result = await cameraView.StartCameraAsync();
+            var result = await cameraView.StartCameraAsync(new(640,480));
             Debug.WriteLine("Start camera result " + result);
         }
         else
@@ -87,7 +87,7 @@ public partial class SizedPage : ContentPage
 #if IOS
             var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mov"));
 #else
-            var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4"));
+            var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4"), new Size(1280, 720));
 #endif
             Debug.WriteLine("Start recording result " + result);
             //}

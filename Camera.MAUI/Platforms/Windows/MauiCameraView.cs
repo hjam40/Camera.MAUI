@@ -131,15 +131,25 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                     }).GetAwaiter().GetResult();
                     frameSource = mediaCapture.FrameSources.FirstOrDefault(source => source.Value.Info.MediaStreamType == MediaStreamType.VideoRecord
                                                                                           && source.Value.Info.SourceKind == MediaFrameSourceKind.Color).Value;
-                    cameraView.Cameras.Add(new CameraInfo
+                    var camInfo = new CameraInfo
                     {
                         Name = s.DisplayName,
                         DeviceId = s.Id,
                         Position = position,
                         HasFlashUnit = frameSource.Controller.VideoDeviceController.FlashControl.Supported,
                         MinZoomFactor = frameSource.Controller.VideoDeviceController.ZoomControl.Supported ? frameSource.Controller.VideoDeviceController.ZoomControl.Min : 1f,
-                        MaxZoomFactor = frameSource.Controller.VideoDeviceController.ZoomControl.Supported ? frameSource.Controller.VideoDeviceController.ZoomControl.Max : 1f
-                    });
+                        MaxZoomFactor = frameSource.Controller.VideoDeviceController.ZoomControl.Supported ? frameSource.Controller.VideoDeviceController.ZoomControl.Max : 1f,
+                        AvailableResolutions = new()
+                    };
+                    foreach(var profile in MediaCapture.FindAllVideoProfiles(s.Id))
+                    {
+                        foreach (var recordMediaP in profile.SupportedRecordMediaDescription)
+                        {
+                            if (!camInfo.AvailableResolutions.Any(s => s.Width == recordMediaP.Width && s.Height == recordMediaP.Height))
+                                camInfo.AvailableResolutions.Add(new(recordMediaP.Width, recordMediaP.Height));
+                        }
+                    }
+                    cameraView.Cameras.Add(camInfo);
                 }
 
                 var aDevices = DeviceInformation.FindAllAsync(DeviceClass.AudioCapture).GetAwaiter().GetResult();
@@ -155,7 +165,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             }
         }
     }
-    internal async Task<CameraResult> StartRecordingAsync(string file)
+    internal async Task<CameraResult> StartRecordingAsync(string file, Size Resolution)
     {
         CameraResult result = CameraResult.Success;
 
@@ -184,13 +194,22 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                                                                                   && source.Value.Info.SourceKind == MediaFrameSourceKind.Color).Value;
                     if (frameSource != null)
                     {
-                        UpdateTorch();
-                        SetZoomFactor(cameraView.ZoomFactor);
+                        MediaFrameFormat frameFormat;
+                        if (Resolution.Width <= 0 || Resolution.Height <= 0)
+                            frameFormat = frameSource.SupportedFormats.OrderByDescending(f => f.VideoFormat.Width * f.VideoFormat.Height).FirstOrDefault();
+                        else
+                            frameFormat = frameSource.SupportedFormats.First(f => f.VideoFormat.Width == Resolution.Width && f.VideoFormat.Height == Resolution.Height);
 
-                        mediaElement.AutoPlay = true;
-                        mediaElement.Source = MediaSource.CreateFromMediaFrameSource(frameSource);
-                        await mediaRecording.StartAsync();
-                        recording = true;
+                        if (frameFormat != null)
+                        {
+                            await frameSource.SetFormatAsync(frameFormat);
+                            UpdateTorch();
+                            SetZoomFactor(cameraView.ZoomFactor);
+                            mediaElement.AutoPlay = true;
+                            mediaElement.Source = MediaSource.CreateFromMediaFrameSource(frameSource);
+                            await mediaRecording.StartAsync();
+                            recording = true;
+                        }
                     }
                     else
                         result = CameraResult.NoVideoFormatsAvailable;
@@ -214,9 +233,9 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
     }
     internal async Task<CameraResult> StopRecordingAsync()
     {
-        return await StartCameraAsync();
+        return await StartCameraAsync(cameraView.PhotosResolution);
     }
-    internal async Task<CameraResult> StartCameraAsync()
+    internal async Task<CameraResult> StartCameraAsync(Size PhotosResolution)
     {
         CameraResult result = CameraResult.Success;
 
@@ -243,8 +262,12 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                         UpdateTorch();
                         UpdateMirroredImage();
                         SetZoomFactor(cameraView.ZoomFactor);
-                        
-                        var frameFormat = frameSource.SupportedFormats.OrderByDescending(f => f.VideoFormat.Width * f.VideoFormat.Height).FirstOrDefault();
+
+                        MediaFrameFormat frameFormat;
+                        if (PhotosResolution.Width <= 0 || PhotosResolution.Height <= 0)
+                            frameFormat = frameSource.SupportedFormats.OrderByDescending(f => f.VideoFormat.Width * f.VideoFormat.Height).FirstOrDefault();
+                        else
+                            frameFormat = frameSource.SupportedFormats.First(f => f.VideoFormat.Width == PhotosResolution.Width && f.VideoFormat.Height == PhotosResolution.Height);
 
                         if (frameFormat != null)
                         {
@@ -316,6 +339,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                         cameraView.DecodeBarcode(img);
                     img.Dispose();
                 }
+                lock (cameraView.currentThreadsLocker) cameraView.currentThreads--;
                 GC.Collect();
             });
         }
@@ -336,9 +360,21 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             frames++;
             if (frames >= cameraView.BarCodeDetectionFrameRate)
             {
-                var frame = sender.TryAcquireLatestFrame();
-                ProcessQRImage(frame.VideoMediaFrame.SoftwareBitmap);
-                frames = 0;
+                bool processQR = false;
+                lock (cameraView.currentThreadsLocker)
+                {
+                    if (cameraView.currentThreads < cameraView.BarCodeDetectionMaxThreads)
+                    {
+                        cameraView.currentThreads++;
+                        processQR = true;
+                    }
+                }
+                if (processQR)
+                {
+                    var frame = sender.TryAcquireLatestFrame();
+                    ProcessQRImage(frame.VideoMediaFrame.SoftwareBitmap);
+                    frames = 0;
+                }
             }
         }
     }
@@ -388,6 +424,27 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
     }
     internal async Task<Stream> TakePhotoAsync(ImageFormat imageFormat)
     {
+        /*
+        CameraCaptureUI cameraCaptureUI = new CameraCaptureUI();
+        cameraCaptureUI.PhotoSettings.Format = imageFormat switch
+        {
+            ImageFormat.PNG => CameraCaptureUIPhotoFormat.Png,
+            _=> CameraCaptureUIPhotoFormat.Jpeg
+        };
+        if (cameraView.PhotosResolution.Width != 0 && cameraView.PhotosResolution.Height != 0)
+            cameraCaptureUI.PhotoSettings.CroppedSizeInPixels = new(cameraView.PhotosResolution.Width, cameraView.PhotosResolution.Height);
+        try
+        {
+            var photo = await cameraCaptureUI.CaptureFileAsync(CameraCaptureUIMode.Photo);
+            var rstr = await photo.OpenReadAsync();
+            MemoryStream stream = new();
+            rstr.AsStreamForRead().CopyTo(stream);
+            rstr.Dispose();
+            await photo.DeleteAsync();
+            return stream;
+        }
+        catch { }
+        */
         if (started && !snapping && frameReader != null)
         {
             snapping = true;
@@ -413,6 +470,13 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                 {
                     if (flowDirection == Microsoft.UI.Xaml.FlowDirection.RightToLeft)
                         encoder.BitmapTransform.Flip = BitmapFlip.Horizontal;
+                    /*
+                    if (cameraView.PhotosResolution.Width != 0 && cameraView.PhotosResolution.Height != 0)
+                    {
+                        encoder.BitmapTransform.ScaledWidth = (uint)cameraView.PhotosResolution.Width;
+                        encoder.BitmapTransform.ScaledHeight = (uint)cameraView.PhotosResolution.Height;
+                    }
+                    */
                     await encoder.FlushAsync();
                     stream.Position = 0;
                     img.Dispose();

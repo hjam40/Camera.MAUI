@@ -131,6 +131,12 @@ public class CameraView : View, ICameraView
         set { SetValue(BarCodeDetectionFrameRateProperty, value); }
     }
     /// <summary>
+    /// Indicates the maximun number of simultaneous running threads for barcode detection
+    /// </summary>
+    public int BarCodeDetectionMaxThreads { get; set; } = 3;
+    internal int currentThreads = 0;
+    internal object currentThreadsLocker = new();
+    /// <summary>
     /// Options for the barcode detection. This is a bindable property.
     /// </summary>
     public BarcodeDecodeOptions BarCodeOptions
@@ -280,6 +286,7 @@ public class CameraView : View, ICameraView
 
     private readonly BarcodeReaderGeneric BarcodeReader;
     internal DateTime lastSnapshot = DateTime.Now;
+    internal Size PhotosResolution = new(0, 0);
 
     public CameraView()
     {
@@ -308,6 +315,8 @@ public class CameraView : View, ICameraView
 
     internal void DecodeBarcode(DecodeDataType data)
     {
+        System.Diagnostics.Debug.WriteLine("Calculate Luminance " + DateTime.Now.ToString("mm:ss:fff"));
+
         LuminanceSource lumSource = default;
 #if ANDROID
         lumSource = new Camera.MAUI.Platforms.Android.BitmapLuminanceSource(data);
@@ -316,6 +325,8 @@ public class CameraView : View, ICameraView
 #elif WINDOWS
         lumSource = new Camera.MAUI.Platforms.Windows.SoftwareBitmapLuminanceSource(data);
 #endif
+        System.Diagnostics.Debug.WriteLine("End Calculate Luminance " + DateTime.Now.ToString("mm:ss:fff"));
+
         try
         {
             Result[] results = null;
@@ -412,15 +423,22 @@ public class CameraView : View, ICameraView
     }
     /// <summary>
     /// Start playback of the selected camera async. "Camera" property must not be null.
+    /// <paramref name="Resolution"/> Indicates the resolution for the preview and photos taken with TakePhotoAsync (must be in Camera.AvailableResolutions). If width or height is 0, max resolution will be taken.
     /// </summary>
-    public async Task<CameraResult> StartCameraAsync()
+    public async Task<CameraResult> StartCameraAsync(Size Resolution = default)
     {
         CameraResult result = CameraResult.AccessError;
         if (Camera != null)
         {
+            PhotosResolution = Resolution;
+            if (Resolution.Width != 0 && Resolution.Height != 0)
+            {
+                if (!Camera.AvailableResolutions.Any(r => r.Width == Resolution.Width && r.Height == Resolution.Height))
+                    return CameraResult.ResolutionNotAvailable;
+            }
             if (Handler != null && Handler is CameraViewHandler handler)
             {
-                result = await handler.StartCameraAsync();
+                result = await handler.StartCameraAsync(Resolution);
                 if (result == CameraResult.Success)
                 {
                     BarCodeResults = null;
@@ -437,15 +455,21 @@ public class CameraView : View, ICameraView
     /// <summary>
     /// Start recording a video async. "Camera" property must not be null.
     /// <paramref name="file"/> Full path to file where video will be stored.
+    /// <paramref name="Resolution"/> Sets the Video Resolution. It must be in Camera.AvailableResolutions. If width or height is 0, max resolution will be taken.
     /// </summary>
-    public async Task<CameraResult> StartRecordingAsync(string file)
+    public async Task<CameraResult> StartRecordingAsync(string file, Size Resolution = default)
     {
         CameraResult result = CameraResult.AccessError;
         if (Camera != null)
         {
+            if (Resolution.Width != 0 && Resolution.Height != 0)
+            {
+                if (!Camera.AvailableResolutions.Any(r => r.Width == Resolution.Width && r.Height == Resolution.Height))
+                    return CameraResult.ResolutionNotAvailable;
+            }
             if (Handler != null && Handler is CameraViewHandler handler)
             {
-                result = await handler.StartRecordingAsync(file);
+                result = await handler.StartRecordingAsync(file, Resolution);
                 if (result == CameraResult.Success)
                 {
                     BarCodeResults = null;
@@ -530,6 +554,16 @@ public class CameraView : View, ICameraView
         if (Handler != null && Handler is CameraViewHandler handler)
         {
             handler.ForceAutoFocus();
+        }
+    }
+    /// <summary>
+    /// Forces the device specific control dispose
+    /// </summary>
+    public void ForceDisposeHandler()
+    {
+        if (Handler != null && Handler is CameraViewHandler handler)
+        {
+            handler.ForceDispose();
         }
     }
     internal void RefreshDevices()

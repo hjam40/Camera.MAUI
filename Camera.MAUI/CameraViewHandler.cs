@@ -65,22 +65,22 @@ internal partial class CameraViewHandler : ViewHandler<CameraView, PlatformView>
 #endif
     }
 
-    public Task<CameraResult> StartCameraAsync()
+    public Task<CameraResult> StartCameraAsync(Size PhotosResolution)
     {
         if (PlatformView != null)
         {
 #if WINDOWS || ANDROID || IOS || MACCATALYST
-            return PlatformView.StartCameraAsync();
+            return PlatformView.StartCameraAsync(PhotosResolution);
 #endif
         }
         return Task.Run(() => { return CameraResult.AccessError; });
     }
-    public Task<CameraResult> StartRecordingAsync(string file)
+    public Task<CameraResult> StartRecordingAsync(string file, Size Resolution)
     {
         if (PlatformView != null)
         {
 #if WINDOWS || ANDROID || IOS
-            return PlatformView.StartRecordingAsync(file);
+            return PlatformView.StartRecordingAsync(file, Resolution);
 #endif
         }
         return Task.Run(() => { return CameraResult.AccessError; });
@@ -147,11 +147,14 @@ internal partial class CameraViewHandler : ViewHandler<CameraView, PlatformView>
     }
     public void ForceAutoFocus()
     {
-        if (PlatformView != null)
-        {
 #if ANDROID || WINDOWS || IOS || MACCATALYST
-            PlatformView.ForceAutoFocus();
+        PlatformView?.ForceAutoFocus();
 #endif
-        }
+    }
+    public void ForceDispose()
+    {
+#if ANDROID || WINDOWS || IOS || MACCATALYST
+        PlatformView?.DisposeControl();
+#endif
     }
 }
