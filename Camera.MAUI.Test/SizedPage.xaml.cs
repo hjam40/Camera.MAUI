@@ -33,7 +33,7 @@ public partial class SizedPage : ContentPage
         cameraView.BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
         {
             AutoRotate = true,
-            PossibleFormats = { BarcodeFormat.QR_CODE },
+            PossibleFormats = { BarcodeFormat.EAN_13 },
             ReadMultipleCodes = false,
             TryHarder = false,
             TryInverted = true
@@ -66,7 +66,7 @@ public partial class SizedPage : ContentPage
         {
             cameraLabel.BackgroundColor = Colors.White;
             cameraView.Camera = camera;
-            var result = await cameraView.StartCameraAsync(new(640,480));
+            var result = await cameraView.StartCameraAsync();
             Debug.WriteLine("Start camera result " + result);
         }
         else

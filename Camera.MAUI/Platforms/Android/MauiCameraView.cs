@@ -160,7 +160,10 @@ internal class MauiCameraView: GridLayout
                         mediaRecorder.SetOrientationHint(orientation);
                         mediaRecorder.Prepare();
 
-                        cameraManager.OpenCamera(cameraView.Camera.DeviceId, executorService, stateListener);
+                        if (OperatingSystem.IsAndroidVersionAtLeast(28))
+                            cameraManager.OpenCamera(cameraView.Camera.DeviceId, executorService, stateListener);
+                        else
+                            cameraManager.OpenCamera(cameraView.Camera.DeviceId, stateListener, null);
                         started = true;
                     }
                     catch
@@ -188,20 +191,35 @@ internal class MauiCameraView: GridLayout
 
         previewBuilder = cameraDevice.CreateCaptureRequest(recording ? CameraTemplate.Record : CameraTemplate.Preview);
         var surfaces = new List<OutputConfiguration>();
+        var surfaces26 = new List<Surface>();
         var previewSurface = new Surface(texture);
         surfaces.Add(new OutputConfiguration(previewSurface));
+        surfaces26.Add(previewSurface);
         previewBuilder.AddTarget(previewSurface);
         if (imgReader != null)
+        {
             surfaces.Add(new OutputConfiguration(imgReader.Surface));
+            surfaces26.Add(imgReader.Surface);
+        }
         if (mediaRecorder != null)
         {
             surfaces.Add(new OutputConfiguration(mediaRecorder.Surface));
+            surfaces26.Add(mediaRecorder.Surface);
             previewBuilder.AddTarget(mediaRecorder.Surface);
         }
 
         sessionCallback = new PreviewCaptureStateCallback(this);
-        SessionConfiguration config = new((int)SessionType.Regular, surfaces, executorService, sessionCallback);
-        cameraDevice.CreateCaptureSession(config);
+        if (OperatingSystem.IsAndroidVersionAtLeast(28))
+        {
+            SessionConfiguration config = new((int)SessionType.Regular, surfaces, executorService, sessionCallback);
+            cameraDevice.CreateCaptureSession(config);
+        }
+        else
+        {
+#pragma warning disable CS0618 // El tipo o el miembro están obsoletos
+            cameraDevice.CreateCaptureSession(surfaces26, sessionCallback, null);
+#pragma warning restore CS0618 // El tipo o el miembro están obsoletos
+        }
     }
     private void UpdatePreview()
     {
@@ -250,7 +268,10 @@ internal class MauiCameraView: GridLayout
                         backgroundHandler = new Handler(backgroundThread.Looper);
                         imgReader.SetOnImageAvailableListener(photoListener, backgroundHandler);
 
-                        cameraManager.OpenCamera(cameraView.Camera.DeviceId, executorService, stateListener);
+                        if (OperatingSystem.IsAndroidVersionAtLeast(28))
+                            cameraManager.OpenCamera(cameraView.Camera.DeviceId, executorService, stateListener);
+                        else
+                            cameraManager.OpenCamera(cameraView.Camera.DeviceId, stateListener, null);
                         timer.Start();
 
                         started = true;

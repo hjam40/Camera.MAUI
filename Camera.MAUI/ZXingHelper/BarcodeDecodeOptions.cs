@@ -3,7 +3,6 @@
 namespace Camera.MAUI.ZXingHelper;
 
 public record BarcodeDecodeOptions
-
 {
     public bool AutoRotate { get; init; } = true;
     public string CharacterSet { get; init; } = string.Empty;
@@ -12,5 +11,4 @@ public record BarcodeDecodeOptions
     public bool ReadMultipleCodes { get; init; } = false;
     public bool TryHarder { get; init; } = true;
     public bool TryInverted { get; init; } = true;
-
 }
