@@ -8,6 +8,9 @@ public class CameraInfo
     public bool HasFlashUnit { get; internal set; }
     public float MinZoomFactor { get; internal set; }
     public float MaxZoomFactor { get; internal set; }
+    public float HorizontalViewAngle { get; internal set; }
+    public float VerticalViewAngle { get; internal set; }
+
     public List<Size> AvailableResolutions { get; internal set; }
     public override string ToString()
     {

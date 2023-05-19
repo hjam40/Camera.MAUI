@@ -29,8 +29,8 @@
 		<Authors>hjam40</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<Version>1.4.1</Version>
-		<PackageReleaseNotes>Compatibility with Android 8
+		<Version>1.4.2</Version>
+		<PackageReleaseNotes>Fix problems in some Android Devices
 </PackageReleaseNotes>
 	</PropertyGroup>
 

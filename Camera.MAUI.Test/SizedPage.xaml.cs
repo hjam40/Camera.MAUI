@@ -166,11 +166,7 @@ public partial class SizedPage : ContentPage
 
     private void CheckBox_CheckedChanged_1(object sender, CheckedChangedEventArgs e)
     {
-        if (e.Value && cameraView.AutoSnapShotSeconds <= 0 || !cameraView.AutoSnapShotAsImageSource)
-            snapPreview.SetBinding(Image.SourceProperty, nameof(cameraView.SnapShot));
-        else if (cameraView.AutoSnapShotSeconds <= 0)
-            snapPreview.RemoveBinding(Image.SourceProperty);
-        cameraView.TakeAutoSnapShot = e.Value;
+        cameraView.FlashMode = e.Value ? FlashMode.Enabled : FlashMode.Disabled;
     }
 
     private void MicroPicker_SelectedIndexChanged(object sender, EventArgs e)

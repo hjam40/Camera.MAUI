@@ -26,9 +26,7 @@
                     <CheckBox CheckedChanged="CheckBox3_CheckedChanged" VerticalOptions="Center" Color="Black"/>
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center">
-                    <Label Text="AutoSnap freq: " VerticalOptions="Center" TextColor="Black"/>
-                    <Entry WidthRequest="20" TextChanged="Entry_TextChanged" Keyboard="Numeric" TextColor="Black" />
-                    <Label Text="Take Autosnap" VerticalOptions="Center" TextColor="Black"/>
+                    <Label Text="Flash" VerticalOptions="Center" TextColor="Black"/>
                     <CheckBox CheckedChanged="CheckBox_CheckedChanged_1" VerticalOptions="Center" Color="Black"/>
                     <Label Text="As ISource" VerticalOptions="Center" TextColor="Black"/>
                     <CheckBox BindingContext="{x:Reference cameraView}" IsChecked="{Binding AutoSnapShotAsImageSource}" VerticalOptions="Center" Color="Black"/>

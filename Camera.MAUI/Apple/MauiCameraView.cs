@@ -84,7 +84,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         AVCaptureDevicePosition.Back => CameraPosition.Back,
                         AVCaptureDevicePosition.Front => CameraPosition.Front,
                         _ => CameraPosition.Unknow
-                    };
+                    };                    
                     cameraView.Cameras.Add(new CameraInfo
                     {
                         Name = device.LocalizedName,

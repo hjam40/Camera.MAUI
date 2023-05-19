@@ -11,9 +11,9 @@ using Android.Hardware.Camera2.Params;
 using Size = Android.Util.Size;
 using Class = Java.Lang.Class;
 using Rect = Android.Graphics.Rect;
+using SizeF = Android.Util.SizeF;
 using Android.Runtime;
 using Android.OS;
-using Microsoft.Maui.Controls.PlatformConfiguration;
 
 namespace Camera.MAUI.Platforms.Android;
 
@@ -95,12 +95,31 @@ internal class MauiCameraView: GridLayout
                 }
                 cameraInfo.MaxZoomFactor = (float)(chars.Get(CameraCharacteristics.ScalerAvailableMaxDigitalZoom) as Java.Lang.Number);
                 cameraInfo.HasFlashUnit = (bool)(chars.Get(CameraCharacteristics.FlashInfoAvailable) as Java.Lang.Boolean);
-                StreamConfigurationMap map = (StreamConfigurationMap)chars.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
                 cameraInfo.AvailableResolutions = new();
-                foreach(var s in map.GetOutputSizes(Class.FromType(typeof(ImageReader))))
-                    cameraInfo.AvailableResolutions.Add(new(s.Width, s.Height));
+                try
+                {
+                    float[] maxFocus = (float[])chars.Get(CameraCharacteristics.LensInfoAvailableFocalLengths);
+                    SizeF size = (SizeF)chars.Get(CameraCharacteristics.SensorInfoPhysicalSize);
+                    cameraInfo.HorizontalViewAngle = (float)(2 * Math.Atan(size.Width / (maxFocus[0] * 2)));
+                    cameraInfo.VerticalViewAngle = (float)(2 * Math.Atan(size.Height / (maxFocus[0] * 2)));
+                }
+                catch { }
+                try
+                {
+                    StreamConfigurationMap map = (StreamConfigurationMap)chars.Get(CameraCharacteristics.ScalerStreamConfigurationMap);
+                    foreach (var s in map.GetOutputSizes(Class.FromType(typeof(ImageReader))))
+                        cameraInfo.AvailableResolutions.Add(new(s.Width, s.Height));
+                }
+                catch
+                {
+                    if (cameraInfo.Position == CameraPosition.Back)
+                        cameraInfo.AvailableResolutions.Add(new(1920, 1080));
+                    cameraInfo.AvailableResolutions.Add(new(1280, 720));
+                    cameraInfo.AvailableResolutions.Add(new(640, 480));
+                    cameraInfo.AvailableResolutions.Add(new(352, 288));
+                }
                 cameraView.Cameras.Add(cameraInfo);
-            }
+                }
             if (OperatingSystem.IsAndroidVersionAtLeast(30))
             {
                 cameraView.Microphones.Clear();
