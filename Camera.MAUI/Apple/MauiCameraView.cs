@@ -133,10 +133,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         };
                         frames = 0;
                         captureDevice = camDevices.First(d => d.UniqueID == cameraView.Camera.DeviceId);
-                        if (captureDevice.IsFocusModeSupported(AVCaptureFocusMode.ContinuousAutoFocus))
-                            captureDevice.FocusMode = AVCaptureFocusMode.ContinuousAutoFocus;
-                        else
-                            captureDevice.FocusMode = AVCaptureFocusMode.AutoFocus;
+                        ForceAutoFocus();
                         captureInput = new AVCaptureDeviceInput(captureDevice, out var err);
                         captureSession.AddInput(captureInput);
                         micDevice = micDevices.First(d => d.UniqueID == cameraView.Microphone.DeviceId);
@@ -199,10 +196,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         };
                         frames = 0;
                         captureDevice = camDevices.First(d => d.UniqueID == cameraView.Camera.DeviceId);
-                        if (captureDevice.IsFocusModeSupported(AVCaptureFocusMode.ContinuousAutoFocus))
-                            captureDevice.FocusMode = AVCaptureFocusMode.ContinuousAutoFocus;
-                        else
-                            captureDevice.FocusMode = AVCaptureFocusMode.AutoFocus;
+                        ForceAutoFocus();
                         captureInput = new AVCaptureDeviceInput(captureDevice, out var err);
                         captureSession.AddInput(captureInput);
                         captureSession.AddOutput(videoDataOutput);

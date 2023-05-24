@@ -29,8 +29,8 @@
 		<Authors>hjam40</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<Version>1.4.2</Version>
-		<PackageReleaseNotes>Fix problems in some Android Devices
+		<Version>1.4.3</Version>
+		<PackageReleaseNotes>Fix problems with Android rotate device.  Fix iOS problems.
 </PackageReleaseNotes>
 	</PropertyGroup>
 

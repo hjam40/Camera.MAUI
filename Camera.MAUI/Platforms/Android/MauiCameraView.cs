@@ -14,6 +14,9 @@ using Rect = Android.Graphics.Rect;
 using SizeF = Android.Util.SizeF;
 using Android.Runtime;
 using Android.OS;
+using Android.Renderscripts;
+using RectF = Android.Graphics.RectF;
+using Android.Content.Res;
 
 namespace Camera.MAUI.Platforms.Android;
 
@@ -715,9 +718,11 @@ internal class MauiCameraView: GridLayout
     private void AdjustAspectRatio(int videoWidth, int videoHeight)
     {
         Matrix txform = new();
+        /*
         float scaleX = (float)videoWidth / Width;
         float scaleY = (float)videoHeight / Height;
-        if (IsDimensionSwapped())
+        bool swapped = IsDimensionSwapped();
+        if (swapped)
         {
             scaleX = (float)videoHeight / Width;
             scaleY = (float)videoWidth / Height;
@@ -732,8 +737,37 @@ internal class MauiCameraView: GridLayout
             scaleX /= scaleY;
             scaleY = 1;
         }
-        txform.PostScale(scaleX, scaleY, 0, 0);
+        */
+        RectF viewRect = new(0, 0, Width, Height);
+        float centerX = viewRect.CenterX();
+        float centerY = viewRect.CenterY();
+        RectF bufferRect = new(0, 0, videoHeight, videoWidth);
+        bufferRect.Offset(centerX - bufferRect.CenterX(), centerY - bufferRect.CenterY());
+        txform.SetRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.Fill);
+        float scale = Math.Max(
+                (float)Height / videoHeight,
+                (float)Width / videoWidth);
+        txform.PostScale(scale, scale, centerX, centerY);
+
+        //txform.PostScale(scaleX, scaleY, centerX, centerY);
+        IWindowManager windowManager = context.GetSystemService(Context.WindowService).JavaCast<IWindowManager>();
+        var rotation = windowManager.DefaultDisplay.Rotation;
+        if (SurfaceOrientation.Rotation90 == rotation || SurfaceOrientation.Rotation270 == rotation)
+        {
+            txform.PostRotate(90 * ((int)rotation - 2), centerX, centerY);
+        }
+        else if (SurfaceOrientation.Rotation180 == rotation)
+        {
+            txform.PostRotate(180, centerX, centerY);
+        }
         textureView.SetTransform(txform);
+    }
+
+    protected override async void OnConfigurationChanged(Configuration newConfig)
+    {
+        base.OnConfigurationChanged(newConfig);
+        if (started && !recording)
+            await StartCameraAsync(cameraView.PhotosResolution);
     }
 
     private bool IsDimensionSwapped()
