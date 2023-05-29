@@ -174,6 +174,9 @@ if (stream != null)
 **Use Control with MVVM:**
 The control has several binding properties for take an snapshot:
 ```csharp
+    /// Binding property for use this control in MVVM.
+    public CameraView Self
+
     /// Sets how often the SnapShot property is updated in seconds.
     /// Default 0: no snapshots are taken
     /// WARNING! A low frequency directly impacts over control performance and memory usage (with AutoSnapShotAsImageSource = true)

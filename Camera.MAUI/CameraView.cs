@@ -18,6 +18,7 @@ namespace Camera.MAUI;
 
 public class CameraView : View, ICameraView
 {
+    public static readonly BindableProperty SelfProperty = BindableProperty.Create(nameof(Self), typeof(CameraView), typeof(CameraView), null, BindingMode.OneWayToSource);
     public static readonly BindableProperty FlashModeProperty = BindableProperty.Create(nameof(FlashMode), typeof(FlashMode), typeof(CameraView), FlashMode.Disabled);
     public static readonly BindableProperty TorchEnabledProperty = BindableProperty.Create(nameof(TorchEnabled), typeof(bool), typeof(CameraView), false);
     public static readonly BindableProperty CamerasProperty = BindableProperty.Create(nameof(Cameras), typeof(ObservableCollection<CameraInfo>), typeof(CameraView), new ObservableCollection<CameraInfo>());
@@ -42,6 +43,14 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty AutoRecordingFileProperty = BindableProperty.Create(nameof(AutoRecordingFile), typeof(string), typeof(CameraView), string.Empty);
     public static readonly BindableProperty AutoStartRecordingProperty = BindableProperty.Create(nameof(AutoStartRecording), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartRecordingChanged);
 
+    /// <summary>
+    /// Binding property for use this control in MVVM.
+    /// </summary>
+    public CameraView Self
+    {
+        get { return (CameraView)GetValue(SelfProperty); }
+        set { SetValue(SelfProperty, value); }
+    }
     /// <summary>
     /// Flash mode for take a photo. This is a bindable property.
     /// </summary>
@@ -300,6 +309,7 @@ public class CameraView : View, ICameraView
         {
             CamerasLoaded?.Invoke(this, EventArgs.Empty);
             MicrophonesLoaded?.Invoke(this, EventArgs.Empty);
+            Self = this;
         }
     }
     internal void RefreshSnapshot(ImageSource img)
