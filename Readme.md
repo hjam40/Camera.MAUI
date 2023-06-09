@@ -157,7 +157,7 @@ bool result = cameraView.SaveSnapShot(ImageFormat.PNG, filePath);
 ```
 Record a video:
 ```csharp
-var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4", new Size(1920, 1080)));
+var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4"), new Size(1920, 1080));
 ....
 result = cameraView.StopRecordingAsync();
 ```
