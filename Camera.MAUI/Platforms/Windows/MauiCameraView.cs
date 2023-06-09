@@ -25,6 +25,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
     private bool initiated = false;
     private bool recording = false;
     private FileStream recordStream;
+    bool mediaLoaded = false;
 
     private readonly CameraView cameraView;
     public MauiCameraView(CameraView cameraView)
@@ -35,9 +36,16 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             HorizontalAlignment = Microsoft.UI.Xaml.HorizontalAlignment.Stretch,
             VerticalAlignment = Microsoft.UI.Xaml.VerticalAlignment.Stretch
         };
+        mediaElement.Loaded += MediaElement_Loaded;
         Content = mediaElement;
         InitDevices();
     }
+
+    private void MediaElement_Loaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    {
+        mediaLoaded = true;
+    }
+
     internal void UpdateMirroredImage()
     {
         if (cameraView != null)
@@ -174,6 +182,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             if (started) await StopCameraAsync();
             if (cameraView.Camera != null && cameraView.Microphone != null)
             {
+                while (!mediaLoaded) await Task.Delay(50);
                 started = true;
 
                 mediaCapture = new MediaCapture();
@@ -244,6 +253,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             if (started) await StopCameraAsync();
             if (cameraView.Camera != null)
             {
+                while (!mediaLoaded) await Task.Delay(50);
                 started = true;
                 mediaCapture = new MediaCapture();
                 try

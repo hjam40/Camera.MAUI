@@ -29,7 +29,7 @@
 		<Authors>hjam40</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<Version>1.4.3</Version>
+		<Version>1.4.4</Version>
 		<PackageReleaseNotes>Fix problems with Android rotate device.  Fix iOS problems.
 </PackageReleaseNotes>
 	</PropertyGroup>
