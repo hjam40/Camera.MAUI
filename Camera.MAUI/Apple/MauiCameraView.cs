@@ -338,8 +338,8 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         {
             UIImageOrientation orientation = UIDevice.CurrentDevice.Orientation switch
             {
-                UIDeviceOrientation.LandscapeRight => UIImageOrientation.Down,
-                UIDeviceOrientation.LandscapeLeft => UIImageOrientation.Up,
+                UIDeviceOrientation.LandscapeRight => cameraView.Camera?.Position == CameraPosition.Back ? UIImageOrientation.Down : UIImageOrientation.Up,
+                UIDeviceOrientation.LandscapeLeft => cameraView.Camera?.Position == CameraPosition.Back ? UIImageOrientation.Up : UIImageOrientation.Down,
                 UIDeviceOrientation.PortraitUpsideDown => UIImageOrientation.Left,
                 _ => UIImageOrientation.Right
             };
@@ -589,10 +589,12 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                 transform = CATransform3D.MakeRotation((nfloat)Math.PI, 0, 0, 1.0f);
                 break;
             case UIDeviceOrientation.LandscapeLeft:
-                transform = CATransform3D.MakeRotation((nfloat)(-Math.PI / 2), 0, 0, 1.0f);
+                var rotation = cameraView.Camera?.Position == CameraPosition.Back ? -Math.PI / 2 : Math.PI / 2;
+                transform = CATransform3D.MakeRotation((nfloat)rotation, 0, 0, 1.0f);
                 break;
             case UIDeviceOrientation.LandscapeRight:
-                transform = CATransform3D.MakeRotation((nfloat)Math.PI / 2, 0, 0, 1.0f);
+                var rotation2 = cameraView.Camera?.Position == CameraPosition.Back ? Math.PI / 2 : -Math.PI /2;
+                transform = CATransform3D.MakeRotation((nfloat)rotation2, 0, 0, 1.0f);
                 break;
         }
 
