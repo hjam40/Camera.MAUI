@@ -37,6 +37,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     private bool photoTaken = false;
     private bool photoError = false;
     private UIImage photo;
+    private NSObject orientationObserver;
 
     public MauiCameraView(CameraView cameraView)
     {
@@ -61,7 +62,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         cameraDispacher = new DispatchQueue("CameraDispacher");
 
         videoDataOutput.SetSampleBufferDelegate(this, cameraDispacher);
-        NSNotificationCenter.DefaultCenter.AddObserver(UIDevice.OrientationDidChangeNotification, OrientationChanged);
+        orientationObserver = NSNotificationCenter.DefaultCenter.AddObserver(UIDevice.OrientationDidChangeNotification, OrientationChanged);
         InitDevices();
     }
     private void OrientationChanged(NSNotification notification)
@@ -260,7 +261,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     public void DisposeControl()
     {
         if (started) StopCamera();
-        NSNotificationCenter.DefaultCenter.RemoveObserver(UIDevice.OrientationDidChangeNotification);
+        NSNotificationCenter.DefaultCenter.RemoveObserver(orientationObserver);
         PreviewLayer?.Dispose();
         captureSession?.Dispose();
         Dispose();
