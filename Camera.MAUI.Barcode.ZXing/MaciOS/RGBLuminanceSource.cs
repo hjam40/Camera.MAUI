@@ -3,9 +3,9 @@ using CoreGraphics;
 using System.Runtime.InteropServices;
 using UIKit;
 
-namespace Camera.MAUI.ZXingHelper;
+namespace Camera.MAUI.Barcode.ZXing.Platforms.MaciOS;
 
-internal partial class RGBLuminanceSource
+public class RGBLuminanceSource : Barcode.ZXing.RGBLuminanceSource
 {
     public RGBLuminanceSource(UIImage d)
         : base((int)d.CGImage.Width, (int)d.CGImage.Height)

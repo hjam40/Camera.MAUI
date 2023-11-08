@@ -1,6 +1,6 @@
 ﻿using ZXing;
 
-namespace Camera.MAUI.ZXingHelper;
+namespace Camera.MAUI.Barcode.ZXing;
 
 public record BarcodeDecodeOptions
 {

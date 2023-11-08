@@ -8,15 +8,17 @@ using System.Threading.Tasks;
 using ZXing;
 using System.Windows.Markup;
 using System.Collections.Specialized;
-using Camera.MAUI.ZXingHelper;
 using CommunityToolkit.Maui.Views;
+using Camera.MAUI.Barcode.ZXing;
+using Camera.MAUI.Barcode;
 
 namespace Camera.MAUI.Test;
 
 public class CameraViewModel : INotifyPropertyChanged
 {
     private CameraInfo camera = null;
-    public CameraInfo Camera 
+
+    public CameraInfo Camera
     {
         get => camera;
         set
@@ -29,7 +31,9 @@ public class CameraViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(AutoStartPreview));
         }
     }
+
     private ObservableCollection<CameraInfo> cameras = new();
+
     public ObservableCollection<CameraInfo> Cameras
     {
         get => cameras;
@@ -39,6 +43,7 @@ public class CameraViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(Cameras));
         }
     }
+
     public int NumCameras
     {
         set
@@ -47,7 +52,9 @@ public class CameraViewModel : INotifyPropertyChanged
                 Camera = Cameras.First();
         }
     }
+
     private MicrophoneInfo micro = null;
+
     public MicrophoneInfo Microphone
     {
         get => micro;
@@ -57,7 +64,9 @@ public class CameraViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(Microphone));
         }
     }
+
     private ObservableCollection<MicrophoneInfo> micros = new();
+
     public ObservableCollection<MicrophoneInfo> Microphones
     {
         get => micros;
@@ -67,6 +76,7 @@ public class CameraViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(Microphones));
         }
     }
+
     public int NumMicrophones
     {
         set
@@ -75,13 +85,15 @@ public class CameraViewModel : INotifyPropertyChanged
                 Microphone = Microphones.First();
         }
     }
+
     public MediaSource VideoSource { get; set; }
     public BarcodeDecodeOptions BarCodeOptions { get; set; }
     public string BarcodeText { get; set; } = "No barcode detected";
     public bool AutoStartPreview { get; set; } = false;
     public bool AutoStartRecording { get; set; } = false;
-    private Result[] barCodeResults;
-    public Result[] BarCodeResults 
+    private BarcodeResult[] barCodeResults;
+
+    public BarcodeResult[] BarCodeResults
     {
         get => barCodeResults;
         set
@@ -94,17 +106,21 @@ public class CameraViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(BarcodeText));
         }
     }
+
     private bool takeSnapshot = false;
-    public bool TakeSnapshot 
-    { 
+
+    public bool TakeSnapshot
+    {
         get => takeSnapshot;
         set
         {
             takeSnapshot = value;
             OnPropertyChanged(nameof(TakeSnapshot));
-        } 
+        }
     }
+
     public float SnapshotSeconds { get; set; } = 0f;
+
     public string Seconds
     {
         get => SnapshotSeconds.ToString();
@@ -117,6 +133,7 @@ public class CameraViewModel : INotifyPropertyChanged
             }
         }
     }
+
     public Command StartCamera { get; set; }
     public Command StopCamera { get; set; }
     public Command TakeSnapshotCmd { get; set; }
@@ -130,12 +147,13 @@ public class CameraViewModel : INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
+
     public CameraViewModel()
     {
-        BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
+        BarCodeOptions = new BarcodeDecodeOptions
         {
             AutoRotate = true,
-            PossibleFormats = { ZXing.BarcodeFormat.QR_CODE },
+            PossibleFormats = { Barcode.BarcodeFormat.QR_CODE },
             ReadMultipleCodes = false,
             TryHarder = true,
             TryInverted = true

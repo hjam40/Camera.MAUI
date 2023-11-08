@@ -59,6 +59,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\Camera.MAUI.Barcode.ZXing\Camera.MAUI.Barcode.ZXing.csproj" />
+	  <ProjectReference Include="..\Camera.MAUI.Barcode\Camera.MAUI.Barcode.csproj" />
 	  <ProjectReference Include="..\Camera.MAUI\Camera.MAUI.csproj" />
 	</ItemGroup>
 

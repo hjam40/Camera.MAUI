@@ -19,25 +19,29 @@ public partial class SizedPage : ContentPage
             control.snapPreview.Source = ImageSource.FromStream(() => str);
         }
     }
+
     public string BarcodeText { get; set; } = "No barcode detected";
-    public Stream Stream {
+
+    public Stream Stream
+    {
         get { return (Stream)GetValue(StreamProperty); }
-        set { SetValue(StreamProperty, value); } 
+        set { SetValue(StreamProperty, value); }
     }
-	public SizedPage()
-	{
-		InitializeComponent();
+
+    public SizedPage()
+    {
+        InitializeComponent();
         cameraView.CamerasLoaded += CameraView_CamerasLoaded;
         cameraView.MicrophonesLoaded += CameraView_MicrophonesLoaded;
-        cameraView.BarcodeDetected += CameraView_BarcodeDetected;
-        cameraView.BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
+        cameraView.BarcodeDecoder.BarcodeDetected += CameraView_BarcodeDetected;
+        /*cameraView.BarcodeDecoder.BarCodeOptions = new BarcodeDecodeOptions
         {
             AutoRotate = true,
             PossibleFormats = { BarcodeFormat.EAN_13 },
             ReadMultipleCodes = false,
             TryHarder = false,
             TryInverted = true
-        };
+        };*/
         BindingContext = cameraView;
     }
 
@@ -47,7 +51,7 @@ public partial class SizedPage : ContentPage
         microPicker.SelectedIndex = 0;
     }
 
-    private void CameraView_BarcodeDetected(object sender, ZXingHelper.BarcodeEventArgs args)
+    private void CameraView_BarcodeDetected(object sender, Barcode.BarcodeEventArgs args)
     {
         BarcodeText = "Barcode: " + args.Result[0].Text;
         OnPropertyChanged(nameof(BarcodeText));
@@ -74,15 +78,16 @@ public partial class SizedPage : ContentPage
             cameraLabel.BackgroundColor = Colors.Red;
         }
     }
+
     private async void OnStartRecordingClicked(object sender, EventArgs e)
     {
         if (cameraPicker.SelectedItem != null && cameraPicker.SelectedItem is CameraInfo camera)
         {
             //if (microPicker.SelectedItem != null && microPicker.SelectedItem is MicrophoneInfo micro)
             //{
-                cameraLabel.BackgroundColor = Colors.White;
-                microLabel.BackgroundColor = Colors.White;
-                cameraView.Camera = camera;
+            cameraLabel.BackgroundColor = Colors.White;
+            microLabel.BackgroundColor = Colors.White;
+            cameraView.Camera = camera;
             //cameraView.Microphone = micro;
 #if IOS
             var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mov"));
@@ -97,6 +102,7 @@ public partial class SizedPage : ContentPage
         else
             cameraLabel.BackgroundColor = Colors.Red;
     }
+
     private async void OnStopRecordingClicked(object sender, EventArgs e)
     {
         var result = await cameraView.StopRecordingAsync();
@@ -107,13 +113,15 @@ public partial class SizedPage : ContentPage
         player.Source = MediaSource.FromFile(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4"));
 #endif
     }
+
     private async void OnStopClicked(object sender, EventArgs e)
     {
         var result = await cameraView.StopCameraAsync();
         Debug.WriteLine("Stop camera result " + result);
     }
+
     private void OnSnapClicked(object sender, EventArgs e)
-    {        
+    {
         var result = cameraView.GetSnapShot(ImageFormat.PNG);
         if (result != null)
             snapPreview.Source = result;
@@ -123,10 +131,12 @@ public partial class SizedPage : ContentPage
     {
         cameraView.MirroredImage = e.Value;
     }
+
     private void CheckBox4_CheckedChanged(object sender, CheckedChangedEventArgs e)
     {
         cameraView.TorchEnabled = e.Value;
     }
+
     private void CheckBox3_CheckedChanged(object sender, CheckedChangedEventArgs e)
     {
         cameraView.BarCodeDetectionEnabled = e.Value;
@@ -146,7 +156,8 @@ public partial class SizedPage : ContentPage
             {
                 zoomLabel.IsEnabled = zoomStepper.IsEnabled = true;
                 zoomStepper.Maximum = camera.MaxZoomFactor;
-            }else
+            }
+            else
                 zoomLabel.IsEnabled = zoomStepper.IsEnabled = true;
             cameraView.Camera = camera;
         }
