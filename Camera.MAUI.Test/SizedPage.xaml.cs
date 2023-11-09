@@ -1,3 +1,5 @@
+using Camera.MAUI.Plugin;
+using Camera.MAUI.Plugin.ZXing;
 using CommunityToolkit.Maui.Views;
 using System.Diagnostics;
 using ZXing;
@@ -33,15 +35,15 @@ public partial class SizedPage : ContentPage
         InitializeComponent();
         cameraView.CamerasLoaded += CameraView_CamerasLoaded;
         cameraView.MicrophonesLoaded += CameraView_MicrophonesLoaded;
-        cameraView.BarcodeDecoder.BarcodeDetected += CameraView_BarcodeDetected;
-        /*cameraView.BarcodeDecoder.BarCodeOptions = new BarcodeDecodeOptions
+        cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
+        cameraView.PluginDecoder.Options = new ZXingDecoderOptions
         {
             AutoRotate = true,
-            PossibleFormats = { BarcodeFormat.EAN_13 },
+            PossibleFormats = { Plugin.BarcodeFormat.EAN_13 },
             ReadMultipleCodes = false,
             TryHarder = false,
             TryInverted = true
-        };*/
+        };
         BindingContext = cameraView;
     }
 
@@ -51,11 +53,14 @@ public partial class SizedPage : ContentPage
         microPicker.SelectedIndex = 0;
     }
 
-    private void CameraView_BarcodeDetected(object sender, Barcode.BarcodeEventArgs args)
+    private void CameraView_BarcodeDetected(object sender, PluginDecodedEventArgs args)
     {
-        BarcodeText = "Barcode: " + args.Result[0].Text;
-        OnPropertyChanged(nameof(BarcodeText));
-        Debug.WriteLine("BarcodeText=" + args.Result[0].Text);
+        if (args.Results is BarcodeResult[] results)
+        {
+            BarcodeText = "Barcode: " + results[0].Text;
+            OnPropertyChanged(nameof(BarcodeText));
+            Debug.WriteLine("BarcodeText=" + results[0].Text);
+        }
     }
 
     private void CameraView_CamerasLoaded(object sender, EventArgs e)

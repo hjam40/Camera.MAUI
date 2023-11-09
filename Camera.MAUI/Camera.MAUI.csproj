@@ -87,7 +87,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Camera.MAUI.Barcode\Camera.MAUI.Barcode.csproj" />
+	  <ProjectReference Include="..\Camera.MAUI.Plugin\Camera.MAUI.Plugin.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

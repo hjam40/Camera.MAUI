@@ -53,14 +53,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CommunityToolkit.Maui" Version="5.0.0" />
-		<PackageReference Include="CommunityToolkit.Maui.MediaElement" Version="1.0.2" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="6.1.0" />
+		<PackageReference Include="CommunityToolkit.Maui.MediaElement" Version="2.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="7.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Camera.MAUI.Barcode.ZXing\Camera.MAUI.Barcode.ZXing.csproj" />
-	  <ProjectReference Include="..\Camera.MAUI.Barcode\Camera.MAUI.Barcode.csproj" />
+	  <ProjectReference Include="..\Camera.MAUI.Plugin.ZXing\Camera.MAUI.Plugin.ZXing.csproj" />
+	  <ProjectReference Include="..\Camera.MAUI.Plugin\Camera.MAUI.Plugin.csproj" />
 	  <ProjectReference Include="..\Camera.MAUI\Camera.MAUI.csproj" />
 	</ItemGroup>
 

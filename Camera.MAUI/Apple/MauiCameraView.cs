@@ -499,7 +499,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            if (cameraView.BarcodeDecoder != null)
+            if (cameraView.PluginDecoder != null)
             {
                 try
                 {
@@ -511,7 +511,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         var image = UIImage.FromImage(cgImage, UIScreen.MainScreen.Scale, UIImageOrientation.Right);
                         image2 = CropImage(image);
                     }
-                    cameraView.BarcodeDecoder.Decode(image2);
+                    cameraView.PluginDecoder.Decode(image2);
                 }
                 catch
                 {

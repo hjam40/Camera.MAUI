@@ -5,7 +5,7 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:local="clr-namespace:Camera.MAUI.Test"
              xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"
-             xmlns:bc="clr-namespace:Camera.MAUI.Barcode.ZXing;assembly=Camera.MAUI.Barcode.ZXing"
+             xmlns:bc="clr-namespace:Camera.MAUI.Plugin.ZXing;assembly=Camera.MAUI.Plugin.ZXing"
              Title="MVVMPage" Background="white">
     <ContentPage.BindingContext>
         <local:CameraViewModel />
@@ -18,10 +18,11 @@
                                AutoSnapShotAsImageSource="True" AutoSnapShotFormat="PNG" TakeAutoSnapShot="{Binding TakeSnapshot}" AutoSnapShotSeconds="{Binding SnapshotSeconds}"
                                Microphones="{Binding Microphones, Mode=OneWayToSource}" Microphone="{Binding Microphone}" NumMicrophonesDetected="{Binding NumMicrophones, Mode=OneWayToSource}"
                                AutoRecordingFile="{Binding RecordingFile}" AutoStartRecording="{Binding AutoStartRecording}">
-                    <cv:CameraView.BarcodeDecoder>
-                        <bc:ZXingBarcodeDecoder BarCodeOptions="{Binding BarCodeOptions}" BarCodeResults="{Binding BarCodeResults, Mode=OneWayToSource}"
-                                                BindingContext="{Binding BindingContext, Source={x:Reference cameraView}}" />
-                    </cv:CameraView.BarcodeDecoder>
+                    <cv:CameraView.PluginDecoder>
+                        <bc:ZXingDecoder Options="{Binding BarCodeOptions}"
+                                         Results="{Binding BarCodeResults, Mode=OneWayToSource}"
+                                         BindingContext="{Binding BindingContext, Source={x:Reference cameraView}}" />
+                    </cv:CameraView.PluginDecoder>
                 </cv:CameraView>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
                     <Label Text="Select a camera:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black" />

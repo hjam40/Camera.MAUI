@@ -344,13 +344,13 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
         {
             Task.Run(() =>
             {
-                if (cameraView.BarcodeDecoder != null)
+                if (cameraView.PluginDecoder != null)
                 {
                     var img = SoftwareBitmap.Convert(simg, BitmapPixelFormat.Gray8, BitmapAlphaMode.Ignore);
                     if (img != null)
                     {
                         if (img.PixelWidth > 0 && img.PixelHeight > 0)
-                            cameraView.BarcodeDecoder.Decode(img);
+                            cameraView.PluginDecoder.Decode(img);
                         img.Dispose();
                     }
                     lock (cameraView.currentThreadsLocker) cameraView.currentThreads--;

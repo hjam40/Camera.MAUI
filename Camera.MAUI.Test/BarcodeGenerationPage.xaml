@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Camera.MAUI.Test.BarcodeGenerationPage"
              xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"
-             xmlns:bc="clr-namespace:Camera.MAUI.Barcode.ZXing;assembly=Camera.MAUI.Barcode.ZXing"
+             xmlns:bc="clr-namespace:Camera.MAUI.Plugin.ZXing;assembly=Camera.MAUI.Plugin.ZXing"
              Title="BarcodeGenerationPage">
     <Grid>
         <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
@@ -18,7 +18,7 @@
                              BarcodeBackground="White" BarcodeForeground="Blue"
                              BarcodeFormat="QR_CODE">
                 <cv:BarcodeImage.BarcodeRenderer>
-                    <bc:ZXingBarcodeRenderer />
+                    <bc:ZXingRenderer />
                 </cv:BarcodeImage.BarcodeRenderer>
             </cv:BarcodeImage>
         </VerticalStackLayout>

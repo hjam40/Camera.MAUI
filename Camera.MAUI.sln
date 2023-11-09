@@ -7,11 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Camera.MAUI", "Camera.MAUI\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Camera.MAUI.Test", "Camera.MAUI.Test\Camera.MAUI.Test.csproj", "{AFE92281-679D-4DC3-AD37-C2BAA6D1C2BD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Camera.MAUI.Barcode", "Camera.MAUI.Barcode\Camera.MAUI.Barcode.csproj", "{D4ABAD07-DAA6-4062-A7FA-B25D1E2C37F4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Camera.MAUI.Plugin", "Camera.MAUI.Plugin\Camera.MAUI.Plugin.csproj", "{D4ABAD07-DAA6-4062-A7FA-B25D1E2C37F4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Camera.MAUI.Barcode.ZXing", "Camera.MAUI.Barcode.ZXing\Camera.MAUI.Barcode.ZXing.csproj", "{DB6CCC62-6911-419E-B393-48E3097E0ACA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Camera.MAUI.Plugin.ZXing", "Camera.MAUI.Plugin.ZXing\Camera.MAUI.Plugin.ZXing.csproj", "{DB6CCC62-6911-419E-B393-48E3097E0ACA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Camera.MAUI.Barcode.MLKit", "Camera.MAUI.Barcode.MLKit\Camera.MAUI.Barcode.MLKit.csproj", "{27BF5876-E36F-42C7-BD31-C89D69B2888E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Camera.MAUI.Plugin.MLKit", "Camera.MAUI.Plugin.MLKit\Camera.MAUI.Plugin.MLKit.csproj", "{27BF5876-E36F-42C7-BD31-C89D69B2888E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

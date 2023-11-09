@@ -17,7 +17,7 @@ using Android.OS;
 using Android.Renderscripts;
 using RectF = Android.Graphics.RectF;
 using Android.Content.Res;
-using Camera.MAUI.Barcode;
+using Camera.MAUI.Plugin;
 
 namespace Camera.MAUI.Platforms.Android;
 
@@ -383,13 +383,13 @@ internal class MauiCameraView : GridLayout
     {
         Task.Run(() =>
         {
-            if (cameraView.BarcodeDecoder != null)
+            if (cameraView.PluginDecoder != null)
             {
                 Bitmap bitmap = TakeSnap();
                 if (bitmap != null)
                 {
                     System.Diagnostics.Debug.WriteLine($"Processing QR ({bitmap.Width}x{bitmap.Height}) " + DateTime.Now.ToString("mm:ss:fff"));
-                    cameraView.BarcodeDecoder.Decode(bitmap);
+                    cameraView.PluginDecoder.Decode(bitmap);
                     bitmap.Dispose();
                     System.Diagnostics.Debug.WriteLine("QR Processed " + DateTime.Now.ToString("mm:ss:fff"));
                 }
@@ -446,7 +446,10 @@ internal class MauiCameraView : GridLayout
                 float xscale = (float)oriWidth / bitmap.Width;
                 float yscale = (float)oriHeight / bitmap.Height;
                 //bitmap = Bitmap.CreateBitmap(bitmap, Math.Abs(bitmap.Width - (int)((float)Width*xscale)) / 2, Math.Abs(bitmap.Height - (int)((float)Height * yscale)) / 2, Width, Height);
-                bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, Width, Height);
+                if (Width <= bitmap.Width && Height <= bitmap.Height)
+                {
+                    bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, Width, Height);
+                }
                 if (textureView.ScaleX == -1)
                 {
                     Matrix matrix = new();

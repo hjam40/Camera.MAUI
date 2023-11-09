@@ -1,4 +1,4 @@
-using Camera.MAUI.Barcode;
+using Camera.MAUI.Plugin;
 
 namespace Camera.MAUI;
 
@@ -12,7 +12,7 @@ public partial class BarcodeImage : ContentView
     public static readonly BindableProperty BarcodeFormatProperty = BindableProperty.Create(nameof(BarcodeFormat), typeof(BarcodeFormat), typeof(BarcodeImage), BarcodeFormat.QR_CODE, propertyChanged: RefreshRender);
     public static readonly BindableProperty BarcodeProperty = BindableProperty.Create(nameof(Barcode), typeof(string), typeof(BarcodeImage), string.Empty, propertyChanged: RefreshRender);
     public static readonly BindableProperty AspectProperty = BindableProperty.Create(nameof(Aspect), typeof(Aspect), typeof(BarcodeImage), Aspect.AspectFit);
-    public static readonly BindableProperty BarcodeRendererProperty = BindableProperty.Create(nameof(BarcodeRenderer), typeof(IBarcodeRenderer), typeof(BarcodeImage), null);
+    public static readonly BindableProperty BarcodeRendererProperty = BindableProperty.Create(nameof(BarcodeRenderer), typeof(IPluginRenderer), typeof(BarcodeImage), null);
 
     /// <summary>
     /// Foreground color for Codebar generation. This is a bindable property.
@@ -89,9 +89,9 @@ public partial class BarcodeImage : ContentView
     /// <summary>
     /// Barcode renderer. This is a bindable property.
     /// </summary>
-    public IBarcodeRenderer BarcodeRenderer
+    public IPluginRenderer BarcodeRenderer
     {
-        get { return (IBarcodeRenderer)GetValue(BarcodeRendererProperty); }
+        get { return (IPluginRenderer)GetValue(BarcodeRendererProperty); }
         set { SetValue(BarcodeRendererProperty, value); }
     }
 
@@ -108,7 +108,8 @@ public partial class BarcodeImage : ContentView
             barcodeImage.BarcodeRenderer.Background = barcodeImage.BarcodeBackground;
             if (!string.IsNullOrEmpty(barcodeImage.Barcode) && barcodeImage.BarcodeWidth > 0 && barcodeImage.BarcodeHeight > 0)
             {
-                var imageSource = barcodeImage.BarcodeRenderer.EncodeBarcode(barcodeImage.Barcode, barcodeImage.BarcodeFormat, barcodeImage.BarcodeWidth, barcodeImage.BarcodeHeight, barcodeImage.BarcodeMargin);
+                var options = new BarcodeEncoderOptions(barcodeImage.BarcodeFormat, barcodeImage.BarcodeWidth, barcodeImage.BarcodeHeight, barcodeImage.BarcodeMargin);
+                var imageSource = barcodeImage.BarcodeRenderer.EncodeBarcode(barcodeImage.Barcode, options);
                 if (imageSource != null) barcodeImage.image.Source = imageSource;
             }
         }

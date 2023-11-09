@@ -1,8 +1,5 @@
-﻿using Camera.MAUI.Barcode;
-using Microsoft.Maui.Controls;
+﻿using Camera.MAUI.Plugin;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using static Microsoft.Maui.ApplicationModel.Permissions;
 
 #if IOS || MACCATALYST
 using DecodeDataType = UIKit.UIImage;
@@ -42,7 +39,7 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty AutoStartPreviewProperty = BindableProperty.Create(nameof(AutoStartPreview), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartPreviewChanged);
     public static readonly BindableProperty AutoRecordingFileProperty = BindableProperty.Create(nameof(AutoRecordingFile), typeof(string), typeof(CameraView), string.Empty);
     public static readonly BindableProperty AutoStartRecordingProperty = BindableProperty.Create(nameof(AutoStartRecording), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartRecordingChanged);
-    public static readonly BindableProperty BarcodeDecoderProperty = BindableProperty.Create(nameof(BarcodeDecoder), typeof(IBarcodeDecoder), typeof(CameraView), null);
+    public static readonly BindableProperty PluginDecoderProperty = BindableProperty.Create(nameof(PluginDecoder), typeof(IPluginDecoder), typeof(CameraView), null);
 
     /// <summary>
     /// Binding property for use this control in MVVM.
@@ -285,10 +282,10 @@ public class CameraView : View, ICameraView
     /// <summary>
     /// Barcode decoder to use
     /// </summary>
-    public IBarcodeDecoder BarcodeDecoder
+    public IPluginDecoder PluginDecoder
     {
-        get { return (IBarcodeDecoder)GetValue(BarcodeDecoderProperty); }
-        set { SetValue(BarcodeDecoderProperty, value); }
+        get { return (IPluginDecoder)GetValue(PluginDecoderProperty); }
+        set { SetValue(PluginDecoderProperty, value); }
     }
 
     /// <summary>
@@ -626,7 +623,7 @@ catch { }
                 result = await handler.StartCameraAsync(Resolution);
                 if (result == CameraResult.Success)
                 {
-                    BarcodeDecoder?.ClearResults();
+                    PluginDecoder?.ClearResults();
                     OnPropertyChanged(nameof(MinZoomFactor));
                     OnPropertyChanged(nameof(MaxZoomFactor));
                 }
@@ -658,7 +655,7 @@ catch { }
                 result = await handler.StartRecordingAsync(file, Resolution);
                 if (result == CameraResult.Success)
                 {
-                    BarcodeDecoder?.ClearResults();
+                    PluginDecoder?.ClearResults();
                     OnPropertyChanged(nameof(MinZoomFactor));
                     OnPropertyChanged(nameof(MaxZoomFactor));
                 }

@@ -9,8 +9,8 @@ using ZXing;
 using System.Windows.Markup;
 using System.Collections.Specialized;
 using CommunityToolkit.Maui.Views;
-using Camera.MAUI.Barcode.ZXing;
-using Camera.MAUI.Barcode;
+using Camera.MAUI.Plugin.ZXing;
+using Camera.MAUI.Plugin;
 
 namespace Camera.MAUI.Test;
 
@@ -87,20 +87,25 @@ public class CameraViewModel : INotifyPropertyChanged
     }
 
     public MediaSource VideoSource { get; set; }
-    public BarcodeDecodeOptions BarCodeOptions { get; set; }
+    public BarcodeDecoderOptions BarCodeOptions { get; set; }
     public string BarcodeText { get; set; } = "No barcode detected";
     public bool AutoStartPreview { get; set; } = false;
     public bool AutoStartRecording { get; set; } = false;
-    private BarcodeResult[] barCodeResults;
+    private IPluginResult[] barCodeResults;
 
-    public BarcodeResult[] BarCodeResults
+    public IPluginResult[] BarCodeResults
     {
         get => barCodeResults;
         set
         {
             barCodeResults = value;
             if (barCodeResults != null && barCodeResults.Length > 0)
-                BarcodeText = barCodeResults[0].Text;
+            {
+                if (barCodeResults is BarcodeResult[] results)
+                {
+                    BarcodeText = results[0].Text;
+                }
+            }
             else
                 BarcodeText = "No barcode detected";
             OnPropertyChanged(nameof(BarcodeText));
@@ -150,13 +155,13 @@ public class CameraViewModel : INotifyPropertyChanged
 
     public CameraViewModel()
     {
-        BarCodeOptions = new BarcodeDecodeOptions
+        BarCodeOptions = new BarcodeDecoderOptions
         {
-            AutoRotate = true,
-            PossibleFormats = { Barcode.BarcodeFormat.QR_CODE },
-            ReadMultipleCodes = false,
-            TryHarder = true,
-            TryInverted = true
+            //AutoRotate = true,
+            PossibleFormats = { Plugin.BarcodeFormat.QR_CODE },
+            //ReadMultipleCodes = false,
+            //TryHarder = true,
+            //TryInverted = true
         };
         OnPropertyChanged(nameof(BarCodeOptions));
         StartCamera = new Command(() =>
