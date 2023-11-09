@@ -73,7 +73,7 @@ namespace Camera.MAUI.Plugin.MLKit
             var image = InputImage.FromBitmap(data, 0);
             var result = await barcodeScanner.Process(image).ToAwaitableTask();
             var results = Methods.ProcessBarcodeResult(result);
-            if (results.Count > 0)
+            if (results?.Count > 0)
             {
                 Decoded?.Invoke(this, new PluginDecodedEventArgs { Results = results.ToArray() });
             }
