@@ -155,13 +155,13 @@ public class CameraViewModel : INotifyPropertyChanged
 
     public CameraViewModel()
     {
-        BarCodeOptions = new BarcodeDecoderOptions
+        BarCodeOptions = new ZXingDecoderOptions
         {
-            //AutoRotate = true,
+            AutoRotate = true,
             PossibleFormats = { Plugin.BarcodeFormat.QR_CODE },
-            //ReadMultipleCodes = false,
-            //TryHarder = true,
-            //TryInverted = true
+            ReadMultipleCodes = false,
+            TryHarder = true,
+            TryInverted = true
         };
         OnPropertyChanged(nameof(BarCodeOptions));
         StartCamera = new Command(() =>

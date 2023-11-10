@@ -69,28 +69,40 @@ namespace Camera.MAUI.Plugin.MLKit
 #endif
             void Decode(DecodeDataType data)
         {
+            try
+            {
 #if ANDROID
-            var image = InputImage.FromBitmap(data, 0);
-            var result = await barcodeScanner.Process(image).ToAwaitableTask();
-            var results = Methods.ProcessBarcodeResult(result);
-            if (results?.Count > 0)
-            {
-                Decoded?.Invoke(this, new PluginDecodedEventArgs { Results = results.ToArray() });
-            }
-#elif IOS
-            var visionImage = new MLImage(data) { Orientation = UIKit.UIImageOrientation.Up };
-            barcodeScanner.ProcessImage(visionImage, (barcodes, error) =>
-            {
-                var results = new List<BarcodeResult>();
-                foreach (var barcode in barcodes)
-                    results.Add(Methods.ProcessBarcodeResult(barcode));
-
-                if (results.Count > 0)
+                var image = InputImage.FromBitmap(data, 0);
+                var result = await barcodeScanner.Process(image).ToAwaitableTask();
+                var results = Methods.ProcessBarcodeResult(result);
+                if (results?.Count > 0)
                 {
                     Decoded?.Invoke(this, new PluginDecodedEventArgs { Results = results.ToArray() });
                 }
-            });
+                image.Dispose();
+                GC.Collect();
+#elif IOS
+                var image = new MLImage(data) { Orientation = UIKit.UIImageOrientation.Up };
+                barcodeScanner.ProcessImage(image, (barcodes, error) =>
+                {
+                    var results = new List<BarcodeResult>();
+                    foreach (var barcode in barcodes)
+                        results.Add(Methods.ProcessBarcodeResult(barcode));
+
+                    if (results.Count > 0)
+                    {
+                        Decoded?.Invoke(this, new PluginDecodedEventArgs { Results = results.ToArray() });
+                    }
+
+                    image.Dispose();
+                    GC.Collect();
+                });
 #endif
+            }
+            catch { }
+            finally
+            {
+            }
         }
 
         #endregion Public Methods

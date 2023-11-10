@@ -26,7 +26,7 @@
 		<RepositoryUrl>https://github.com/hjam40/Camera.MAUI</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>csharp; dotnet; cross-platform; camera; cameraview; codebar; qr; qr-decoder; codebar-encoder; codebar-decoder; camera-component; camera-view;  plugin; maui; dotnet-maui;</PackageTags>
-		<Authors>hjam40</Authors>
+		<Authors>hjam40,programatix</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<Version>1.4.4</Version>
