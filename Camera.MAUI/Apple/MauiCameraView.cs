@@ -525,7 +525,11 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         {
             lock (lockCapture)
             {
-                lastCapture?.Dispose();
+                if (lastCapture != null)
+                {
+                    lastCapture.Dispose();
+                    GC.Collect();
+                }
                 lastCapture = capture;
             }
             if (!snapping && cameraView.AutoSnapShotSeconds > 0 && (DateTime.Now - cameraView.lastSnapshot).TotalSeconds >= cameraView.AutoSnapShotSeconds)
@@ -537,8 +541,8 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                 {
                     if (cameraView.currentThreads < cameraView.BarCodeDetectionMaxThreads)
                     {
-                        cameraView.currentThreads++;
                         processQR = true;
+                        cameraView.currentThreads++;
                     }
                 }
                 if (processQR)

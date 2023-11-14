@@ -392,6 +392,7 @@ internal class MauiCameraView : GridLayout
                     cameraView.PluginDecoder.Decode(bitmap);
                     bitmap.Dispose();
                     System.Diagnostics.Debug.WriteLine("QR Processed " + DateTime.Now.ToString("mm:ss:fff"));
+                    GC.Collect();
                 }
                 lock (cameraView.currentThreadsLocker) cameraView.currentThreads--;
             }

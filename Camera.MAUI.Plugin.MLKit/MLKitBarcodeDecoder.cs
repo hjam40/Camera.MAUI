@@ -80,7 +80,6 @@ namespace Camera.MAUI.Plugin.MLKit
                     Decoded?.Invoke(this, new PluginDecodedEventArgs { Results = results.ToArray() });
                 }
                 image.Dispose();
-                GC.Collect();
 #elif IOS
                 var image = new MLImage(data) { Orientation = UIKit.UIImageOrientation.Up };
                 barcodeScanner.ProcessImage(image, (barcodes, error) =>
@@ -95,7 +94,6 @@ namespace Camera.MAUI.Plugin.MLKit
                     }
 
                     image.Dispose();
-                    GC.Collect();
                 });
 #endif
             }
