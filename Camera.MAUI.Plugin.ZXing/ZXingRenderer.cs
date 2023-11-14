@@ -34,7 +34,7 @@ namespace Camera.MAUI.Plugin.ZXing
 
         #region Public Methods
 
-        public ImageSource EncodeBarcode(string code, IPluginEncoderOptions options)
+        public ImageSource EncodeBarcode(string code, IPluginRendererOptions options)
         {
             ImageSource imageSource = null;
             if (options is BarcodeEncoderOptions noptions)

@@ -11,7 +11,7 @@
 
         #region Public Methods
 
-        ImageSource EncodeBarcode(string code, IPluginEncoderOptions options);
+        ImageSource EncodeBarcode(string code, IPluginRendererOptions options);
 
         #endregion Public Methods
     }

@@ -1,5 +1,6 @@
 ﻿using Camera.MAUI.Plugin;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 
 namespace Camera.MAUI;
 
@@ -27,7 +28,7 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty AutoStartPreviewProperty = BindableProperty.Create(nameof(AutoStartPreview), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartPreviewChanged);
     public static readonly BindableProperty AutoRecordingFileProperty = BindableProperty.Create(nameof(AutoRecordingFile), typeof(string), typeof(CameraView), string.Empty);
     public static readonly BindableProperty AutoStartRecordingProperty = BindableProperty.Create(nameof(AutoStartRecording), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartRecordingChanged);
-    public static readonly BindableProperty PluginDecoderProperty = BindableProperty.Create(nameof(PluginDecoder), typeof(IPluginDecoder), typeof(CameraView), null);
+    public static readonly BindableProperty PluginDecoderProperty = BindableProperty.Create(nameof(PluginDecoder), typeof(IPluginDecoder), typeof(CameraView), null, propertyChanged: PluginDecoderChanged);
 
     /// <summary>
     /// Binding property for use this control in MVVM.
@@ -366,6 +367,22 @@ public class CameraView : View, ICameraView
                 }
                 else
                     await control.StopRecordingAsync();
+            }
+            catch { }
+        }
+    }
+
+    private static void PluginDecoderChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (oldValue != newValue && bindable is CameraView control)
+        {
+            try
+            {
+                if (newValue is BindableObject bo)
+                {
+                    var b = new Binding(nameof(control.BindingContext), source: control);
+                    bo.SetBinding(BindableObject.BindingContextProperty, b);
+                }
             }
             catch { }
         }

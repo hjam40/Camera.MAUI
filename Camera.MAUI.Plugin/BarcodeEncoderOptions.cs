@@ -1,6 +1,6 @@
 ﻿namespace Camera.MAUI.Plugin
 {
-    public class BarcodeEncoderOptions : IPluginEncoderOptions
+    public class BarcodeEncoderOptions : IPluginRendererOptions
     {
         public BarcodeFormat Format { get; set; }
         public int Width { get; set; }

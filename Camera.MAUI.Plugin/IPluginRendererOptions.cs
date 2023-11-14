@@ -1,6 +1,6 @@
 ﻿namespace Camera.MAUI.Plugin
 {
-    public interface IPluginEncoderOptions
+    public interface IPluginRendererOptions
     {
     }
 }

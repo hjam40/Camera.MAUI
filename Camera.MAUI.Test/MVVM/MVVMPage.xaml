@@ -20,8 +20,7 @@
                                AutoRecordingFile="{Binding RecordingFile}" AutoStartRecording="{Binding AutoStartRecording}">
                     <cv:CameraView.PluginDecoder>
                         <bc:ZXingDecoder Options="{Binding BarCodeOptions}"
-                                         Results="{Binding BarCodeResults, Mode=OneWayToSource}"
-                                         BindingContext="{Binding BindingContext, Source={x:Reference cameraView}}" />
+                                         Results="{Binding BarCodeResults, Mode=OneWayToSource}" />
                     </cv:CameraView.PluginDecoder>
                 </cv:CameraView>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">

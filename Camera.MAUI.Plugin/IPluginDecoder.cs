@@ -1,4 +1,6 @@
-﻿#if IOS || MACCATALYST
+﻿using System.Windows.Input;
+
+#if IOS || MACCATALYST
 using DecodeDataType = UIKit.UIImage;
 #elif ANDROID
 using DecodeDataType = Android.Graphics.Bitmap;
@@ -14,21 +16,16 @@ namespace Camera.MAUI.Plugin
 {
     public interface IPluginDecoder
     {
-        #region Public Delegates
-
-        public delegate void DecoderResultHandler(object sender, PluginDecodedEventArgs args);
-
-        #endregion Public Delegates
-
         #region Public Events
 
-        event DecoderResultHandler Decoded;
+        event PluginDecoderResultHandler Decoded;
 
         #endregion Public Events
 
         #region Public Properties
 
-        IPluginDecoderOptions Options { get; set; }
+        ICommand OnDecodedCommand { get; set; }
+        bool VibrateOnDetected { get; set; }
 
         #endregion Public Properties
 

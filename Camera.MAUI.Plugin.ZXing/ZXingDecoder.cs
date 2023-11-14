@@ -14,43 +14,13 @@ using DecodeDataType = System.Object;
 
 namespace Camera.MAUI.Plugin.ZXing
 {
-    public class ZXingDecoder : BindableObject, IPluginDecoder
+    public class ZXingDecoder : PluginDecoder<ZXingDecoderOptions, ZXingResult>
     {
-        #region Public Fields
-
-        public static readonly BindableProperty OptionsProperty = BindableProperty.Create(nameof(Options), typeof(ZXingDecoderOptions), typeof(ZXingDecoder), new ZXingDecoderOptions(), propertyChanged: OptionsChanged);
-        public static readonly BindableProperty ResultsProperty = BindableProperty.Create(nameof(Results), typeof(ZXingResult[]), typeof(ZXingDecoder), null, BindingMode.OneWayToSource);
-
-        #endregion Public Fields
-
         #region Private Fields
 
-        private readonly BarcodeReaderGeneric BarcodeReader;
+        private readonly BarcodeReaderGeneric BarcodeReader = new();
 
         #endregion Private Fields
-
-        #region Public Constructors
-
-        public ZXingDecoder()
-        {
-            BarcodeReader = new BarcodeReaderGeneric();
-            /*Options = new ZXingDecoderOptions()
-            {
-                PossibleFormats = { BarcodeFormat.QR_CODE, BarcodeFormat.DATA_MATRIX },
-                AutoRotate = true,
-            };*/
-        }
-
-        #endregion Public Constructors
-
-        #region Public Events
-
-        /// <summary>
-        /// Event launched every time a code is detected in the image if "BarCodeDetectionEnabled" is set to true.
-        /// </summary>
-        public event IPluginDecoder.DecoderResultHandler Decoded;
-
-        #endregion Public Events
 
         #region Public Properties
 
@@ -59,34 +29,16 @@ namespace Camera.MAUI.Plugin.ZXing
         /// </summary>
         public bool ControlBarcodeResultDuplicate { get; set; } = false;
 
-        /// <summary>
-        /// Options for the barcode detection. This is a bindable property.
-        /// </summary>
-        public IPluginDecoderOptions Options
-        {
-            get { return (IPluginDecoderOptions)GetValue(OptionsProperty); }
-            set { SetValue(OptionsProperty, value); }
-        }
-
-        /// <summary>
-        /// It refresh each time a barcode is detected if BarCodeDetectionEnabled property is true
-        /// </summary>
-        public ZXingResult[] Results
-        {
-            get { return (ZXingResult[])GetValue(ResultsProperty); }
-            set { SetValue(ResultsProperty, value); }
-        }
-
         #endregion Public Properties
 
         #region Public Methods
 
-        public void ClearResults()
+        public override void ClearResults()
         {
             Results = null;
         }
 
-        public void Decode(DecodeDataType data)
+        public override void Decode(DecodeDataType data)
         {
             System.Diagnostics.Debug.WriteLine("Calculate Luminance " + DateTime.Now.ToString("mm:ss:fff"));
 
@@ -130,7 +82,7 @@ namespace Camera.MAUI.Plugin.ZXing
                     if (refresh)
                     {
                         Results = nativeResults;
-                        Decoded?.Invoke(this, new PluginDecodedEventArgs { Results = Results });
+                        OnDecoded(new PluginDecodedEventArgs { Results = Results });
                     }
                 }
             }
@@ -139,30 +91,27 @@ namespace Camera.MAUI.Plugin.ZXing
 
         #endregion Public Methods
 
-        #region Private Methods
+        #region Protected Methods
 
-        private static void OptionsChanged(BindableObject bindable, object oldValue, object newValue)
+        protected override void OnOptionsChanged(object oldValue, object newValue)
         {
-            if (newValue != null && oldValue != newValue && bindable is ZXingDecoder xingDecoder)
+            if (newValue is BarcodeDecoderOptions barcodeOptions)
             {
-                if (newValue is BarcodeDecoderOptions barcodeOptions)
-                {
-                    xingDecoder.BarcodeReader.Options.PossibleFormats = barcodeOptions.PossibleFormats.Select(x => x.ToPlatform()).ToList();
-                }
-                if (newValue is ZXingDecoderOptions zxingOptions)
-                {
-                    xingDecoder.BarcodeReader.AutoRotate = zxingOptions.AutoRotate;
-                    if (zxingOptions.CharacterSet != string.Empty)
-                        xingDecoder.BarcodeReader.Options.CharacterSet = zxingOptions.CharacterSet;
+                BarcodeReader.Options.PossibleFormats = barcodeOptions.PossibleFormats?.Select(x => x.ToPlatform()).ToList();
+            }
+            if (newValue is ZXingDecoderOptions zxingOptions)
+            {
+                BarcodeReader.AutoRotate = zxingOptions.AutoRotate;
+                if (zxingOptions.CharacterSet != string.Empty)
+                    BarcodeReader.Options.CharacterSet = zxingOptions.CharacterSet;
 
-                    xingDecoder.BarcodeReader.Options.TryHarder = zxingOptions.TryHarder;
-                    xingDecoder.BarcodeReader.Options.TryInverted = zxingOptions.TryInverted;
-                    xingDecoder.BarcodeReader.Options.PureBarcode = zxingOptions.PureBarcode;
-                }
+                BarcodeReader.Options.TryHarder = zxingOptions.TryHarder;
+                BarcodeReader.Options.TryInverted = zxingOptions.TryInverted;
+                BarcodeReader.Options.PureBarcode = zxingOptions.PureBarcode;
             }
         }
 
-        #endregion Private Methods
+        #endregion Protected Methods
 
         /*
         internal void DecodeBarcode(DecodeDataType data)

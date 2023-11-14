@@ -18,48 +18,17 @@ using BarcodeScanner = System.Object;
 
 namespace Camera.MAUI.Plugin.MLKit
 {
-    public class MLKitBarcodeDecoder : BindableObject, IPluginDecoder
+    public class MLKitBarcodeDecoder : PluginDecoder<MLKitBarcodeDecoderOptions, BarcodeResult>
     {
-        #region Public Fields
-
-        public static readonly BindableProperty OptionsProperty = BindableProperty.Create(nameof(Options), typeof(MLKitBarcodeDecoderOptions), typeof(MLKitBarcodeDecoder), new MLKitBarcodeDecoderOptions(), propertyChanged: OptionsChanged);
-
-        #endregion Public Fields
-
         #region Private Fields
 
         private BarcodeScanner barcodeScanner;
 
         #endregion Private Fields
 
-        #region Public Constructors
-
-        public MLKitBarcodeDecoder()
-        {
-            Init(this, Options);
-        }
-
-        #endregion Public Constructors
-
-        #region Public Events
-
-        public event IPluginDecoder.DecoderResultHandler Decoded;
-
-        #endregion Public Events
-
-        #region Public Properties
-
-        public IPluginDecoderOptions Options
-        {
-            get { return (IPluginDecoderOptions)GetValue(OptionsProperty); }
-            set { SetValue(OptionsProperty, value); }
-        }
-
-        #endregion Public Properties
-
         #region Public Methods
 
-        public void ClearResults()
+        public override void ClearResults()
         {
         }
 
@@ -67,7 +36,7 @@ namespace Camera.MAUI.Plugin.MLKit
 #if ANDROID
             async
 #endif
-            void Decode(DecodeDataType data)
+            override void Decode(DecodeDataType data)
         {
             try
             {
@@ -77,7 +46,7 @@ namespace Camera.MAUI.Plugin.MLKit
                 var results = Methods.ProcessBarcodeResult(result);
                 if (results?.Count > 0)
                 {
-                    Decoded?.Invoke(this, new PluginDecodedEventArgs { Results = results.ToArray() });
+                    OnDecoded(new PluginDecodedEventArgs { Results = results.ToArray() });
                 }
                 image.Dispose();
 #elif IOS
@@ -90,11 +59,13 @@ namespace Camera.MAUI.Plugin.MLKit
 
                     if (results.Count > 0)
                     {
-                        Decoded?.Invoke(this, new PluginDecodedEventArgs { Results = results.ToArray() });
+                        OnDecoded(new PluginDecodedEventArgs { Results = results.ToArray() });
                     }
 
                     image.Dispose();
                 });
+#else
+                throw new NotImplementedException();
 #endif
             }
             catch { }
@@ -105,40 +76,32 @@ namespace Camera.MAUI.Plugin.MLKit
 
         #endregion Public Methods
 
-        #region Private Methods
+        #region Protected Methods
 
-        private static void Init(MLKitBarcodeDecoder decoder, IPluginDecoderOptions options)
+        protected override void OnOptionsChanged(object oldValue, object newValue)
         {
-            if (options is BarcodeDecoderOptions barcodeOptions)
+            if (newValue is BarcodeDecoderOptions barcodeOptions)
             {
 #if ANDROID || IOS
                 var platformFormats = barcodeOptions.PossibleFormats?.Count > 0
                     ? barcodeOptions.PossibleFormats.Select(x => x.ToPlatform()).Aggregate((r, x) => r |= x)
                     : default;
 #if ANDROID
-                decoder.barcodeScanner = BarcodeScanning.GetClient(new BarcodeScannerOptions.Builder()
+                barcodeScanner = BarcodeScanning.GetClient(new BarcodeScannerOptions.Builder()
                     .SetBarcodeFormats(platformFormats == default ? FormatAllFormats : platformFormats)
                     .Build()
                 );
 #elif IOS
                 var scannerOptions = new BarcodeScannerOptions(platformFormats == default ? global::MLKit.BarcodeScanning.BarcodeFormat.Unknown : platformFormats);
-                decoder.barcodeScanner = BarcodeScanner.BarcodeScannerWithOptions(scannerOptions);
+                barcodeScanner = BarcodeScanner.BarcodeScannerWithOptions(scannerOptions);
 #endif
 #endif
             }
-            if (options is MLKitBarcodeDecoderOptions mlkitOptions)
+            if (newValue is MLKitBarcodeDecoderOptions mlkitOptions)
             {
             }
         }
 
-        private static void OptionsChanged(BindableObject bindable, object oldValue, object newValue)
-        {
-            if (newValue != null && oldValue != newValue && bindable is MLKitBarcodeDecoder decoder)
-            {
-                Init(decoder, (IPluginDecoderOptions)newValue);
-            }
-        }
-
-        #endregion Private Methods
+        #endregion Protected Methods
     }
 }

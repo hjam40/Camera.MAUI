@@ -11,9 +11,7 @@
             <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
                 <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="300">
                     <cv:CameraView.PluginDecoder>
-                        <bc:ZXingDecoder Options="{Binding BarCodeOptions}"
-                                         Results="{Binding BarCodeResults, Mode=OneWayToSource}"
-                                         BindingContext="{Binding BindingContext, Source={x:Reference cameraView}}" />
+                        <bc:ZXingDecoder />
                     </cv:CameraView.PluginDecoder>
                 </cv:CameraView>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
