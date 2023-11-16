@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Input;
+﻿using System.Windows.Input;
 
 #if IOS || MACCATALYST
 using DecodeDataType = UIKit.UIImage;
@@ -49,24 +44,28 @@ namespace Camera.MAUI.Plugin
 
         #region Public Properties
 
+        /// <inheritdoc />
         public ICommand OnDecodedCommand
         {
             get { return (ICommand)GetValue(OnDecodedCommandProperty); }
             set { SetValue(OnDecodedCommandProperty, value); }
         }
 
+        /// <inheritdoc />
         public TOptions Options
         {
             get { return (TOptions)GetValue(OptionsProperty); }
             set { SetValue(OptionsProperty, value); }
         }
 
+        /// <inheritdoc />
         public TResult[] Results
         {
             get { return (TResult[])GetValue(ResultsProperty); }
             set { SetValue(ResultsProperty, value); }
         }
 
+        /// <inheritdoc />
         public bool VibrateOnDetected
         {
             get => (bool)GetValue(VibrateOnDetectedProperty);

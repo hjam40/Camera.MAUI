@@ -18,6 +18,9 @@ namespace Camera.MAUI.Plugin
     {
         #region Public Events
 
+        /// <summary>
+        /// Event launched every time a successful decode occurs in the image if "Camera.MAUI.CameraView.BarCodeDetectionEnabled" is set to true.
+        /// </summary>
         event PluginDecoderResultHandler Decoded;
 
         #endregion Public Events
@@ -25,6 +28,7 @@ namespace Camera.MAUI.Plugin
         #region Public Properties
 
         ICommand OnDecodedCommand { get; set; }
+
         bool VibrateOnDetected { get; set; }
 
         #endregion Public Properties

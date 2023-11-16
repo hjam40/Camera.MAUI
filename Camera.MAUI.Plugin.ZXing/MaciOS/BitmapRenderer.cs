@@ -8,8 +8,22 @@ namespace Camera.MAUI.Plugin.ZXing.Platforms.MaciOS;
 
 public class BitmapRenderer : IBarcodeRenderer<UIImage>
 {
-    public CGColor Foreground { get; set; }
-    public CGColor Background { get; set; }
+    private CGColor foreground;
+    private CGColor background;
+    private UIColor foregroundUIColor;
+    private UIColor backgroundUIColor;
+
+    public CGColor Foreground
+    {
+        get => foreground;
+        set { foreground=value; foregroundUIColor=new UIColor(value); }
+    }
+
+    public CGColor Background
+    {
+        get => background;
+        set { background=value; backgroundUIColor=new UIColor(value); }
+    }
 
     public BitmapRenderer()
     {
@@ -23,6 +37,25 @@ public class BitmapRenderer : IBarcodeRenderer<UIImage>
 
     public UIImage Render(BitMatrix matrix, global::ZXing.BarcodeFormat format, string content, EncodingOptions options)
     {
+#if IOS17_0_OR_GREATER || MACCATALYST17_0_OR_GREATER
+        var renderer = new UIGraphicsImageRenderer(new CGSize(matrix.Width, matrix.Height));
+        var img = renderer.CreateImage((UIGraphicsImageRendererContext context) =>
+        {
+            for (int x = 0; x < matrix.Width; x++)
+            {
+                for (int y = 0; y < matrix.Height; y++)
+                {
+                    if (matrix[x, y])
+                        foregroundUIColor.SetFill();
+                    else
+                        backgroundUIColor.SetFill();
+
+                    context.FillRect(new CGRect(x, y, 1, 1));
+                }
+            }
+        });
+        return img;
+#else
         UIGraphics.BeginImageContext(new CGSize(matrix.Width, matrix.Height));
         var context = UIGraphics.GetCurrentContext();
 
@@ -40,6 +73,7 @@ public class BitmapRenderer : IBarcodeRenderer<UIImage>
         UIGraphics.EndImageContext();
 
         return img;
+#endif
     }
 }
 #endif
