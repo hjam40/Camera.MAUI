@@ -77,8 +77,8 @@ For more information on permissions, see the [Microsoft Docs](https://docs.micro
 
 In XAML, make sure to add the right XML namespace:
 
-`xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`
-`xmlns:bc="clr-namespace:Camera.MAUI.Plugin.ZXing;assembly=Camera.MAUI.Plugin.ZXing"`, or
+`xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`  
+`xmlns:bc="clr-namespace:Camera.MAUI.Plugin.ZXing;assembly=Camera.MAUI.Plugin.ZXing"`, or  
 `xmlns:bc="clr-namespace:Camera.MAUI.Plugin.MLKit;assembly=Camera.MAUI.Plugin.MLKit"`
 
 Use the control:
@@ -297,7 +297,7 @@ A ContentView control for generate codebars images.
 
 In XAML, make sure to add the right XML namespace:
 
-`xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`
+`xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`  
 `xmlns:bc="clr-namespace:Camera.MAUI.Plugin.ZXing;assembly=Camera.MAUI.Plugin.ZXing"`
 
 Use the control and its bindable properties:
