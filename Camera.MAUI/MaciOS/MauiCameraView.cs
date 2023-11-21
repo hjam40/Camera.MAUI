@@ -492,6 +492,18 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         x = (nfloat)((originalImage.Size.Width - width) / 2.0);
         y = (nfloat)((originalImage.Size.Height - height) / 2.0);
 
+#if (IOS17_0_OR_GREATER || MACCATALYST17_0_OR_GREATER || TRUE)
+        var renderer = new UIGraphicsImageRenderer(new CGSize(width, height));
+        var croppedImage = renderer.CreateImage((UIGraphicsImageRendererContext context) =>
+        {
+            if (cameraView.MirroredImage)
+            {
+                context.CGContext.ScaleCTM(-1, 1);
+                context.CGContext.TranslateCTM(-width, 0);
+            }
+            originalImage.Draw(new CGPoint(-x, -y));
+        });
+#else
         UIGraphics.BeginImageContextWithOptions(originalImage.Size, false, 1);
         if (cameraView.MirroredImage)
         {
@@ -502,6 +514,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         originalImage.Draw(new CGPoint(0, 0));
         UIImage croppedImage = UIImage.FromImage(UIGraphics.GetImageFromCurrentImageContext().CGImage.WithImageInRect(new CGRect(new CGPoint(x, y), new CGSize(width, height))));
         UIGraphics.EndImageContext();
+#endif
 
         return croppedImage;
     }

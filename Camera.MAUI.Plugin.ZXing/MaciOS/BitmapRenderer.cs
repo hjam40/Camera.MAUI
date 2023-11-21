@@ -37,7 +37,7 @@ public class BitmapRenderer : IBarcodeRenderer<UIImage>
 
     public UIImage Render(BitMatrix matrix, global::ZXing.BarcodeFormat format, string content, EncodingOptions options)
     {
-#if (IOS17_0_OR_GREATER || MACCATALYST17_0_OR_GREATER)
+#if (IOS17_0_OR_GREATER || MACCATALYST17_0_OR_GREATER || TRUE)
         var renderer = new UIGraphicsImageRenderer(new CGSize(matrix.Width, matrix.Height));
         var img = renderer.CreateImage((UIGraphicsImageRendererContext context) =>
         {
