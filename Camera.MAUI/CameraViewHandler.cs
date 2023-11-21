@@ -1,7 +1,7 @@
 ﻿using Microsoft.Maui.Handlers;
 
 #if IOS || MACCATALYST
-using PlatformView = Camera.MAUI.Platforms.Apple.MauiCameraView;
+using PlatformView = Camera.MAUI.Platforms.MaciOS.MauiCameraView;
 #elif ANDROID
 using PlatformView = Camera.MAUI.Platforms.Android.MauiCameraView;
 #elif WINDOWS

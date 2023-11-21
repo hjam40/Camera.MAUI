@@ -1,5 +1,4 @@
-﻿#if IOS || MACCATALYST
-using AVFoundation;
+﻿using AVFoundation;
 using CoreAnimation;
 using CoreFoundation;
 using CoreGraphics;
@@ -7,11 +6,9 @@ using CoreImage;
 using CoreMedia;
 using CoreVideo;
 using Foundation;
-using MediaPlayer;
-using System.IO;
 using UIKit;
 
-namespace Camera.MAUI.Platforms.Apple;
+namespace Camera.MAUI.Platforms.MaciOS;
 
 internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDelegate, IAVCaptureFileOutputRecordingDelegate, IAVCapturePhotoCaptureDelegate
 {
@@ -64,10 +61,12 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         NSNotificationCenter.DefaultCenter.AddObserver(UIDevice.OrientationDidChangeNotification, OrientationChanged);
         InitDevices();
     }
+
     private void OrientationChanged(NSNotification notification)
     {
         LayoutSubviews();
     }
+
     private void InitDevices()
     {
         if (!initiated)
@@ -111,6 +110,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             }
         }
     }
+
     public async Task<CameraResult> StartRecordingAsync(string file, Size Resolution)
     {
         CameraResult result = CameraResult.Success;
@@ -169,6 +169,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             result = CameraResult.NotInitiated;
         return result;
     }
+
     public Task<CameraResult> StopRecordingAsync()
     {
         return StartCameraAsync(cameraView.PhotosResolution);
@@ -221,6 +222,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             result = CameraResult.NotInitiated;
         return result;
     }
+
     public CameraResult StopCamera()
     {
         CameraResult result = CameraResult.Success;
@@ -259,6 +261,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
 
         return result;
     }
+
     public void DisposeControl()
     {
         if (started) StopCamera();
@@ -267,6 +270,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         captureSession?.Dispose();
         Dispose();
     }
+
     public void UpdateMirroredImage()
     {
         if (cameraView != null && PreviewLayer.Connection != null)
@@ -281,6 +285,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             UpdateTorch();
         }
     }
+
     internal void SetZoomFactor(float zoom)
     {
         if (cameraView.Camera != null && captureDevice != null)
@@ -293,6 +298,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             }
         }
     }
+
     internal void ForceAutoFocus()
     {
         if (cameraView.Camera != null && captureDevice != null && captureDevice.IsFocusModeSupported(AVCaptureFocusMode.AutoFocus))
@@ -308,6 +314,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             }
         }
     }
+
     public void UpdateTorch()
     {
         if (captureDevice != null && cameraView != null)
@@ -362,6 +369,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             return stream;
         }
     }
+
     public ImageSource GetSnapShot(ImageFormat imageFormat, bool auto = false)
     {
         ImageSource result = null;
@@ -418,6 +426,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
 
         return result;
     }
+
     public bool SaveSnapShot(ImageFormat imageFormat, string SnapFilePath)
     {
         bool result = true;
@@ -464,6 +473,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             result = false;
         return result;
     }
+
     public UIImage CropImage(UIImage originalImage)
     {
         nfloat x, y, width, height;
@@ -471,12 +481,12 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         if (originalImage.Size.Width <= originalImage.Size.Height)
         {
             width = originalImage.Size.Width;
-            height = (Frame.Size.Height * originalImage.Size.Width) / Frame.Size.Width;
+            height = Frame.Size.Height * originalImage.Size.Width / Frame.Size.Width;
         }
         else
         {
             height = originalImage.Size.Height;
-            width = (Frame.Size.Width * originalImage.Size.Height) / Frame.Size.Height;
+            width = Frame.Size.Width * originalImage.Size.Height / Frame.Size.Height;
         }
 
         x = (nfloat)((originalImage.Size.Width - width) / 2.0);
@@ -495,6 +505,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
 
         return croppedImage;
     }
+
     private void ProccessQR()
     {
         MainThread.BeginInvokeOnMainThread(() =>
@@ -519,6 +530,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             }
         });
     }
+
     private void ProcessImage(CIImage capture)
     {
         new Task(() =>
@@ -560,7 +572,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     {
         frames++;
         currentFrames++;
-        if (frames >= 12 || (cameraView.BarCodeDetectionEnabled && currentFrames >= cameraView.BarCodeDetectionFrameRate))
+        if (frames >= 12 || cameraView.BarCodeDetectionEnabled && currentFrames >= cameraView.BarCodeDetectionFrameRate)
         {
             var capture = CIImage.FromImageBuffer(sampleBuffer.GetImageBuffer());
             ProcessImage(capture);
@@ -573,6 +585,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             sampleBuffer?.Dispose();
         }
     }
+
     [Export("captureOutput:didFinishProcessingPhotoSampleBuffer:previewPhotoSampleBuffer:resolvedSettings:bracketSettings:error:")]
     void DidFinishProcessingPhoto(AVCapturePhotoOutput captureOutput, CMSampleBuffer photoSampleBuffer, CMSampleBuffer previewPhotoSampleBuffer, AVCaptureResolvedPhotoSettings resolvedSettings, AVCaptureBracketedStillImageSettings bracketSettings, NSError error)
     {
@@ -619,4 +632,3 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     {
     }
 }
-#endif
