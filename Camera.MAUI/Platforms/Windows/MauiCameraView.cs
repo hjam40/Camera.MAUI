@@ -1,14 +1,14 @@
 ﻿using Microsoft.UI.Xaml.Controls;
-using Windows.Media.Capture.Frames;
-using Windows.Media.Capture;
 using Windows.Devices.Enumeration;
-using Windows.Media.Core;
 using Windows.Graphics.Imaging;
-using Panel = Windows.Devices.Enumeration.Panel;
-using Windows.Media.MediaProperties;
+using Windows.Media.Capture;
+using Windows.Media.Capture.Frames;
+using Windows.Media.Core;
 using Windows.Media.Devices;
+using Windows.Media.MediaProperties;
+using Panel = Windows.Devices.Enumeration.Panel;
 
-namespace Camera.MAUI.Platforms.Windows;
+namespace Camera.MAUI;
 
 public sealed partial class MauiCameraView : UserControl, IDisposable
 {
@@ -338,7 +338,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             result = CameraResult.NotInitiated;
         return result;
     }
-    private void ProcessQRImage(SoftwareBitmap simg)
+    private void ProcessPlugin(SoftwareBitmap simg)
     {
         if (simg != null)
         {
@@ -375,19 +375,19 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             frames++;
             if (frames >= cameraView.BarCodeDetectionFrameRate)
             {
-                bool processQR = false;
+                bool processPlugin = false;
                 lock (cameraView.currentThreadsLocker)
                 {
                     if (cameraView.currentThreads < cameraView.BarCodeDetectionMaxThreads)
                     {
                         cameraView.currentThreads++;
-                        processQR = true;
+                        processPlugin = true;
                     }
                 }
-                if (processQR)
+                if (processPlugin)
                 {
                     var frame = sender.TryAcquireLatestFrame();
-                    ProcessQRImage(frame.VideoMediaFrame.SoftwareBitmap);
+                    ProcessPlugin(frame.VideoMediaFrame.SoftwareBitmap);
                     frames = 0;
                 }
             }

@@ -2,8 +2,6 @@ using Camera.MAUI.Plugin;
 using Camera.MAUI.Plugin.ZXing;
 using CommunityToolkit.Maui.Views;
 using System.Diagnostics;
-using ZXing;
-using ZXing.QrCode.Internal;
 
 namespace Camera.MAUI.Test;
 

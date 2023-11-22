@@ -1,16 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Camera.MAUI.Plugin;
+using Camera.MAUI.Plugin.ZXing;
+using CommunityToolkit.Maui.Views;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ZXing;
-using System.Windows.Markup;
-using System.Collections.Specialized;
-using CommunityToolkit.Maui.Views;
-using Camera.MAUI.Plugin.ZXing;
-using Camera.MAUI.Plugin;
 
 namespace Camera.MAUI.Test;
 

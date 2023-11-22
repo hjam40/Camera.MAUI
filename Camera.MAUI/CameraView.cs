@@ -1,6 +1,5 @@
 ﻿using Camera.MAUI.Plugin;
 using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
 
 namespace Camera.MAUI;
 

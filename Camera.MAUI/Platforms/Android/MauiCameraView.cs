@@ -1,25 +1,23 @@
 ﻿using Android.Content;
+using Android.Content.Res;
+using Android.Graphics;
+using Android.Hardware.Camera2;
+using Android.Hardware.Camera2.Params;
+using Android.Media;
+using Android.OS;
+using Android.Runtime;
+using Android.Util;
+using Android.Views;
 using Android.Widget;
 using Java.Util.Concurrent;
-using Android.Graphics;
 using CameraCharacteristics = Android.Hardware.Camera2.CameraCharacteristics;
-using Android.Hardware.Camera2;
-using Android.Media;
-using Android.Views;
-using Android.Util;
-using Android.Hardware.Camera2.Params;
-using Size = Android.Util.Size;
 using Class = Java.Lang.Class;
 using Rect = Android.Graphics.Rect;
-using SizeF = Android.Util.SizeF;
-using Android.Runtime;
-using Android.OS;
-using Android.Renderscripts;
 using RectF = Android.Graphics.RectF;
-using Android.Content.Res;
-using Camera.MAUI.Plugin;
+using Size = Android.Util.Size;
+using SizeF = Android.Util.SizeF;
 
-namespace Camera.MAUI.Platforms.Android;
+namespace Camera.MAUI;
 
 internal class MauiCameraView : GridLayout
 {
@@ -379,7 +377,7 @@ internal class MauiCameraView : GridLayout
         }
         catch { }
     }
-    private void ProccessQR()
+    private void ProcessPlugin()
     {
         Task.Run(() =>
         {
@@ -388,10 +386,10 @@ internal class MauiCameraView : GridLayout
                 Bitmap bitmap = TakeSnap();
                 if (bitmap != null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Processing QR ({bitmap.Width}x{bitmap.Height}) " + DateTime.Now.ToString("mm:ss:fff"));
+                    System.Diagnostics.Debug.WriteLine($"Processing Plugin ({bitmap.Width}x{bitmap.Height}) " + DateTime.Now.ToString("mm:ss:fff"));
                     cameraView.PluginDecoder.Decode(bitmap);
                     bitmap.Dispose();
-                    System.Diagnostics.Debug.WriteLine("QR Processed " + DateTime.Now.ToString("mm:ss:fff"));
+                    System.Diagnostics.Debug.WriteLine("Plugin Processed " + DateTime.Now.ToString("mm:ss:fff"));
                     GC.Collect();
                 }
                 lock (cameraView.currentThreadsLocker) cameraView.currentThreads--;
@@ -414,18 +412,18 @@ internal class MauiCameraView : GridLayout
             frames++;
             if (frames >= cameraView.BarCodeDetectionFrameRate)
             {
-                bool processQR = false;
+                bool processPlugin = false;
                 lock (cameraView.currentThreadsLocker)
                 {
                     if (cameraView.currentThreads < cameraView.BarCodeDetectionMaxThreads)
                     {
                         cameraView.currentThreads++;
-                        processQR = true;
+                        processPlugin = true;
                     }
                 }
-                if (processQR)
+                if (processPlugin)
                 {
-                    ProccessQR();
+                    ProcessPlugin();
                     frames = 0;
                 }
             }

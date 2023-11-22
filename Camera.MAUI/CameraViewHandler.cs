@@ -1,12 +1,8 @@
 ﻿using Microsoft.Maui.Handlers;
 
-#if IOS || MACCATALYST
-using PlatformView = Camera.MAUI.Platforms.MaciOS.MauiCameraView;
-#elif ANDROID
-using PlatformView = Camera.MAUI.Platforms.Android.MauiCameraView;
-#elif WINDOWS
-using PlatformView = Camera.MAUI.Platforms.Windows.MauiCameraView;
-#elif (NETSTANDARD || !PLATFORM) || (NET6_0_OR_GREATER && !IOS && !ANDROID)
+#if IOS || MACCATALYST || ANDROID || WINDOWS
+using PlatformView = Camera.MAUI.MauiCameraView;
+#else
 
 using PlatformView = System.Object;
 
@@ -34,13 +30,13 @@ internal partial class CameraViewHandler : ViewHandler<CameraView, PlatformView>
     {
     }
 
+    protected override PlatformView CreatePlatformView() =>
 #if ANDROID
-    protected override PlatformView CreatePlatformView() => new(Context, VirtualView);
+        new(Context, VirtualView);
 #elif IOS || MACCATALYST || WINDOWS
-    protected override PlatformView CreatePlatformView() => new(VirtualView);
+        new(VirtualView);
 #else
-
-    protected override PlatformView CreatePlatformView() => new();
+        new();
 
 #endif
 
@@ -178,6 +174,8 @@ internal partial class CameraViewHandler : ViewHandler<CameraView, PlatformView>
     {
 #if ANDROID || WINDOWS || IOS || MACCATALYST
         PlatformView?.ForceAutoFocus();
+#else
+        throw new NotImplementedException();
 #endif
     }
 
@@ -185,6 +183,8 @@ internal partial class CameraViewHandler : ViewHandler<CameraView, PlatformView>
     {
 #if ANDROID || WINDOWS || IOS || MACCATALYST
         PlatformView?.DisposeControl();
+#else
+        throw new NotImplementedException();
 #endif
     }
 }

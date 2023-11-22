@@ -1,7 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using Camera.MAUI;
-using Microsoft.Maui.Hosting;
-using CommunityToolkit.Maui;
+﻿using CommunityToolkit.Maui;
+using Microsoft.Extensions.Logging;
 
 namespace Camera.MAUI.Test
 {
@@ -22,7 +20,7 @@ namespace Camera.MAUI.Test
                 });
 
 #if DEBUG
-		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
             builder.Services.AddSingleton<CameraViewModel>();
             return builder.Build();

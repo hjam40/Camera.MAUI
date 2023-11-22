@@ -7,13 +7,13 @@ using DecodeDataType = UIKit.UIImage;
 
 using Xamarin.Google.MLKit.Vision.BarCode;
 using Xamarin.Google.MLKit.Vision.Common;
-using DecodeDataType = Android.Graphics.Bitmap;
-using BarcodeScanner = Xamarin.Google.MLKit.Vision.BarCode.IBarcodeScanner;
 using static Xamarin.Google.MLKit.Vision.Barcode.Common.Barcode;
+using BarcodeScanner = Xamarin.Google.MLKit.Vision.BarCode.IBarcodeScanner;
+using DecodeDataType = Android.Graphics.Bitmap;
 
 #elif WINDOWS
-using DecodeDataType = Windows.Graphics.Imaging.SoftwareBitmap;
 using BarcodeScanner = System.Object;
+using DecodeDataType = Windows.Graphics.Imaging.SoftwareBitmap;
 #endif
 
 namespace Camera.MAUI.Plugin.MLKit

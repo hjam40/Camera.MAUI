@@ -8,7 +8,7 @@ using CoreVideo;
 using Foundation;
 using UIKit;
 
-namespace Camera.MAUI.Platforms.MaciOS;
+namespace Camera.MAUI;
 
 internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDelegate, IAVCaptureFileOutputRecordingDelegate, IAVCapturePhotoCaptureDelegate
 {
@@ -519,15 +519,15 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         return croppedImage;
     }
 
-    private void ProccessQR()
+    private async void ProcessPlugin()
     {
-        MainThread.BeginInvokeOnMainThread(() =>
+        if (cameraView.PluginDecoder != null)
         {
-            if (cameraView.PluginDecoder != null)
+            try
             {
-                try
+                UIImage image2 = null;
+                await MainThread.InvokeOnMainThreadAsync(() =>
                 {
-                    UIImage image2;
                     lock (lockCapture)
                     {
                         var ciContext = new CIContext();
@@ -535,13 +535,16 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         var image = UIImage.FromImage(cgImage, UIScreen.MainScreen.Scale, UIImageOrientation.Right);
                         image2 = CropImage(image);
                     }
+                });
+                if (image2 != null)
+                {
                     cameraView.PluginDecoder.Decode(image2);
                 }
-                catch
-                {
-                }
             }
-        });
+            catch
+            {
+            }
+        }
     }
 
     private void ProcessImage(CIImage capture)
@@ -561,18 +564,18 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                 cameraView.RefreshSnapshot(GetSnapShot(cameraView.AutoSnapShotFormat, true));
             else if (cameraView.BarCodeDetectionEnabled && currentFrames >= cameraView.BarCodeDetectionFrameRate)
             {
-                bool processQR = false;
+                bool processPlugin = false;
                 lock (cameraView.currentThreadsLocker)
                 {
                     if (cameraView.currentThreads < cameraView.BarCodeDetectionMaxThreads)
                     {
-                        processQR = true;
+                        processPlugin = true;
                         cameraView.currentThreads++;
                     }
                 }
-                if (processQR)
+                if (processPlugin)
                 {
-                    ProccessQR();
+                    ProcessPlugin();
                     currentFrames = 0;
                     lock (cameraView.currentThreadsLocker) cameraView.currentThreads--;
                 }
@@ -581,7 +584,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     }
 
     [Export("captureOutput:didOutputSampleBuffer:fromConnection:")]
-    public void DidOutputSampleBuffer(AVCaptureOutput captureOutput, CMSampleBuffer sampleBuffer, AVCaptureConnection connection)
+    public virtual void DidOutputSampleBuffer(AVCaptureOutput captureOutput, CMSampleBuffer sampleBuffer, AVCaptureConnection connection)
     {
         frames++;
         currentFrames++;
@@ -599,19 +602,19 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         }
     }
 
-    [Export("captureOutput:didFinishProcessingPhotoSampleBuffer:previewPhotoSampleBuffer:resolvedSettings:bracketSettings:error:")]
-    void DidFinishProcessingPhoto(AVCapturePhotoOutput captureOutput, CMSampleBuffer photoSampleBuffer, CMSampleBuffer previewPhotoSampleBuffer, AVCaptureResolvedPhotoSettings resolvedSettings, AVCaptureBracketedStillImageSettings bracketSettings, NSError error)
+    [Export("captureOutput:didFinishProcessingPhoto:error:")]
+    public virtual void DidFinishProcessingPhoto(AVCapturePhotoOutput captureOutput, AVCapturePhoto photo, NSError error)
     {
-        if (photoSampleBuffer == null)
+        if (error != null)
         {
             photoError = true;
-            return;
         }
-
-        NSData imageData = AVCapturePhotoOutput.GetJpegPhotoDataRepresentation(photoSampleBuffer, previewPhotoSampleBuffer);
-
-        photo = new UIImage(imageData);
-        photoTaken = true;
+        else
+        {
+            var imageData = photo.FileDataRepresentation;
+            this.photo = new UIImage(imageData);
+            photoTaken = true;
+        }
     }
 
     public override void LayoutSubviews()
