@@ -111,6 +111,12 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         }
     }
 
+    private bool IsFlipOrientation()
+    {
+        return (cameraView.Camera?.Position == CameraPosition.Back && !cameraView.MirroredImage)
+            || (cameraView.Camera?.Position == CameraPosition.Front && cameraView.MirroredImage);
+    }
+
     public async Task<CameraResult> StartRecordingAsync(string file, Size Resolution)
     {
         CameraResult result = CameraResult.Success;
@@ -347,8 +353,8 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         {
             UIImageOrientation orientation = UIDevice.CurrentDevice.Orientation switch
             {
-                UIDeviceOrientation.LandscapeRight => UIImageOrientation.Down,
-                UIDeviceOrientation.LandscapeLeft => UIImageOrientation.Up,
+                UIDeviceOrientation.LandscapeRight => IsFlipOrientation() ? UIImageOrientation.Down : UIImageOrientation.Up,
+                UIDeviceOrientation.LandscapeLeft => IsFlipOrientation() ? UIImageOrientation.Up : UIImageOrientation.Down,
                 UIDeviceOrientation.PortraitUpsideDown => UIImageOrientation.Left,
                 _ => UIImageOrientation.Right
             };
@@ -632,11 +638,13 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                 break;
 
             case UIDeviceOrientation.LandscapeLeft:
-                transform = CATransform3D.MakeRotation((nfloat)(-Math.PI / 2), 0, 0, 1.0f);
+                var rotation = IsFlipOrientation() ? -Math.PI / 2 : Math.PI / 2;
+                transform = CATransform3D.MakeRotation((nfloat)rotation, 0, 0, 1.0f);
                 break;
 
             case UIDeviceOrientation.LandscapeRight:
-                transform = CATransform3D.MakeRotation((nfloat)Math.PI / 2, 0, 0, 1.0f);
+                var rotation2 = IsFlipOrientation() ? Math.PI / 2 : -Math.PI / 2;
+                transform = CATransform3D.MakeRotation((nfloat)rotation2, 0, 0, 1.0f);
                 break;
         }
 
