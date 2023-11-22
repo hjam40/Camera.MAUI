@@ -435,29 +435,36 @@ internal class MauiCameraView : GridLayout
         Bitmap bitmap = null;
         try
         {
-            MainThread.InvokeOnMainThreadAsync(() => { bitmap = textureView.GetBitmap(null); bitmap = textureView.Bitmap; }).Wait();
+            MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                //bitmap = textureView.GetBitmap(null);
+                bitmap = textureView.Bitmap;
+            }).Wait();
             if (bitmap != null)
             {
-                int oriWidth = bitmap.Width;
-                int oriHeight = bitmap.Height;
-
+                var oriWidth = bitmap.Width;
+                var oriHeight = bitmap.Height;
                 bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, bitmap.Width, bitmap.Height, textureView.GetTransform(null), false);
-                float xscale = (float)oriWidth / bitmap.Width;
-                float yscale = (float)oriHeight / bitmap.Height;
-                //bitmap = Bitmap.CreateBitmap(bitmap, Math.Abs(bitmap.Width - (int)((float)Width*xscale)) / 2, Math.Abs(bitmap.Height - (int)((float)Height * yscale)) / 2, Width, Height);
-                if (Width <= bitmap.Width && Height <= bitmap.Height)
-                {
-                    bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, Width, Height);
-                }
+
+                Matrix matrix;
                 if (textureView.ScaleX == -1)
                 {
-                    Matrix matrix = new();
+                    matrix = new();
                     matrix.PreScale(-1, 1);
-                    bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, bitmap.Width, bitmap.Height, matrix, false);
                 }
+                else
+                {
+                    matrix = null;
+                }
+
+                var x = (float)((oriWidth - bitmap.Width) / 2.0);
+                var y = (float)((oriHeight - bitmap.Height) / 2.0);
+
+                bitmap = Bitmap.CreateBitmap(bitmap, (int)Math.Abs(x), (int)Math.Abs(y), oriWidth, oriHeight, matrix, false);
             }
         }
-        catch { }
+        catch
+        { }
         return bitmap;
     }
     internal async Task<System.IO.Stream> TakePhotoAsync(ImageFormat imageFormat)
