@@ -381,13 +381,14 @@ internal class MauiCameraView : GridLayout
     {
         Task.Run(() =>
         {
-            if (cameraView.PluginDecoder != null)
+            if (cameraView.PluginDecoder != null || cameraView.PluginDecoders?.Count > 0)
             {
                 Bitmap bitmap = TakeSnap();
                 if (bitmap != null)
                 {
                     System.Diagnostics.Debug.WriteLine($"Processing Plugin ({bitmap.Width}x{bitmap.Height}) " + DateTime.Now.ToString("mm:ss:fff"));
-                    cameraView.PluginDecoder.Decode(bitmap);
+                    cameraView.PluginDecoder?.Decode(bitmap);
+                    cameraView.PluginDecoders?.ToList().ForEach(x => x.Decode(bitmap));
                     bitmap.Dispose();
                     System.Diagnostics.Debug.WriteLine("Plugin Processed " + DateTime.Now.ToString("mm:ss:fff"));
                     GC.Collect();

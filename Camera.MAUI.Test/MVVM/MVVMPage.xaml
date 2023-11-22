@@ -18,10 +18,11 @@
                                AutoSnapShotAsImageSource="True" AutoSnapShotFormat="PNG" TakeAutoSnapShot="{Binding TakeSnapshot}" AutoSnapShotSeconds="{Binding SnapshotSeconds}"
                                Microphones="{Binding Microphones, Mode=OneWayToSource}" Microphone="{Binding Microphone}" NumMicrophonesDetected="{Binding NumMicrophones, Mode=OneWayToSource}"
                                AutoRecordingFile="{Binding RecordingFile}" AutoStartRecording="{Binding AutoStartRecording}">
-                    <cv:CameraView.PluginDecoder>
-                        <bc:ZXingDecoder Options="{Binding BarCodeOptions}"
-                                         Results="{Binding BarCodeResults, Mode=OneWayToSource}" />
-                    </cv:CameraView.PluginDecoder>
+                    <cv:CameraView.PluginDecoders>
+                        <plugin:PluginDecoderCollection xmlns:plugin="clr-namespace:Camera.MAUI.Plugin;assembly=Camera.MAUI.Plugin">
+                            <bc:ZXingDecoder Options="{Binding BarCodeOptions}" Results="{Binding BarCodeResults, Mode=OneWayToSource}" />
+                        </plugin:PluginDecoderCollection>
+                    </cv:CameraView.PluginDecoders>
                 </cv:CameraView>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
                     <Label Text="Select a camera:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black" />

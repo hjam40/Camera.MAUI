@@ -33,17 +33,20 @@ public partial class SizedPage : ContentPage
         InitializeComponent();
         cameraView.CamerasLoaded += CameraView_CamerasLoaded;
         cameraView.MicrophonesLoaded += CameraView_MicrophonesLoaded;
-        cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
-        if (cameraView.PluginDecoder is ZXingDecoder decoder)
+        if (cameraView.PluginDecoder != null)
         {
-            decoder.Options = new ZXingDecoderOptions
+            cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
+            if (cameraView.PluginDecoder is ZXingDecoder decoder)
             {
-                AutoRotate = true,
-                PossibleFormats = { Plugin.BarcodeFormat.EAN_13 },
-                ReadMultipleCodes = false,
-                TryHarder = false,
-                TryInverted = true
-            };
+                decoder.Options = new ZXingDecoderOptions
+                {
+                    AutoRotate = true,
+                    PossibleFormats = { BarcodeFormat.EAN_13 },
+                    ReadMultipleCodes = false,
+                    TryHarder = false,
+                    TryInverted = true
+                };
+            }
         }
         BindingContext = cameraView;
     }

@@ -527,7 +527,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
 
     private async void ProcessPlugin()
     {
-        if (cameraView.PluginDecoder != null)
+        if (cameraView.PluginDecoder != null || cameraView.PluginDecoders?.Count > 0)
         {
             try
             {
@@ -544,7 +544,8 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                 });
                 if (image2 != null)
                 {
-                    cameraView.PluginDecoder.Decode(image2);
+                    cameraView.PluginDecoder?.Decode(image2);
+                    cameraView.PluginDecoders?.ToList().ForEach(x => x.Decode(image2));
                 }
             }
             catch

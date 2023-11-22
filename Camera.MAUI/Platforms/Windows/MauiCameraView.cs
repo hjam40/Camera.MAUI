@@ -338,19 +338,23 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             result = CameraResult.NotInitiated;
         return result;
     }
+
     private void ProcessPlugin(SoftwareBitmap simg)
     {
         if (simg != null)
         {
             Task.Run(() =>
             {
-                if (cameraView.PluginDecoder != null)
+                if (cameraView.PluginDecoder != null || cameraView.PluginDecoders?.Count > 0)
                 {
                     var img = SoftwareBitmap.Convert(simg, BitmapPixelFormat.Gray8, BitmapAlphaMode.Ignore);
                     if (img != null)
                     {
                         if (img.PixelWidth > 0 && img.PixelHeight > 0)
-                            cameraView.PluginDecoder.Decode(img);
+                        {
+                            cameraView.PluginDecoder?.Decode(img);
+                            cameraView.PluginDecoders?.ToList().ForEach(x => x.Decode(img));
+                        }
                         img.Dispose();
                     }
                     lock (cameraView.currentThreadsLocker) cameraView.currentThreads--;
@@ -359,6 +363,7 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
             });
         }
     }
+
     private void RefreshSnapShot()
     {
         cameraView.RefreshSnapshot(GetSnapShot(cameraView.AutoSnapShotFormat, true));

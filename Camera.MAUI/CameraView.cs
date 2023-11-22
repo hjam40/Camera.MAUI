@@ -28,6 +28,7 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty AutoRecordingFileProperty = BindableProperty.Create(nameof(AutoRecordingFile), typeof(string), typeof(CameraView), string.Empty);
     public static readonly BindableProperty AutoStartRecordingProperty = BindableProperty.Create(nameof(AutoStartRecording), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartRecordingChanged);
     public static readonly BindableProperty PluginDecoderProperty = BindableProperty.Create(nameof(PluginDecoder), typeof(IPluginDecoder), typeof(CameraView), null, propertyChanged: PluginDecoderChanged);
+    public static readonly BindableProperty PluginDecodersProperty = BindableProperty.Create(nameof(PluginDecoders), typeof(PluginDecoderCollection), typeof(CameraView), null, propertyChanged: PluginDecodersChanged);
 
     /// <summary>
     /// Binding property for use this control in MVVM.
@@ -268,12 +269,21 @@ public class CameraView : View, ICameraView
     }
 
     /// <summary>
-    /// Barcode decoder to use
+    /// Plugin to use
     /// </summary>
     public IPluginDecoder PluginDecoder
     {
         get { return (IPluginDecoder)GetValue(PluginDecoderProperty); }
         set { SetValue(PluginDecoderProperty, value); }
+    }
+
+    /// <summary>
+    /// Plugins to use
+    /// </summary>
+    public PluginDecoderCollection PluginDecoders
+    {
+        get { return (PluginDecoderCollection)GetValue(PluginDecodersProperty); }
+        set { SetValue(PluginDecodersProperty, value); }
     }
 
     /// <summary>
@@ -379,12 +389,74 @@ public class CameraView : View, ICameraView
             {
                 if (newValue is BindableObject bo)
                 {
-                    var b = new Binding(nameof(control.BindingContext), source: control);
-                    bo.SetBinding(BindableObject.BindingContextProperty, b);
+                    SetBindingContext(control, bo);
                 }
             }
             catch { }
         }
+    }
+
+    private static void PluginDecodersChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (oldValue != newValue && bindable is CameraView control)
+        {
+            try
+            {
+                if (oldValue is PluginDecoderCollection oldCollection)
+                {
+                    oldCollection.CollectionChanged -= PluginDecoders_CollectionChanged;
+                    foreach (var item in oldCollection)
+                    {
+                        if (item is BindableObject boi)
+                        {
+                            RemoveBindingContext(boi);
+                        }
+                    }
+                }
+                if (newValue is PluginDecoderCollection newCollection)
+                {
+                    newCollection.CollectionChanged += PluginDecoders_CollectionChanged;
+                    foreach (var item in newCollection)
+                    {
+                        if (item is BindableObject boi)
+                        {
+                            SetBindingContext(control, boi);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+    }
+
+    private static void PluginDecoders_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        switch (e.Action)
+        {
+            case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
+                foreach (var item in e.NewItems)
+                    SetBindingContext(sender as Element, item as BindableObject);
+                break;
+
+            case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
+                foreach (var item in e.NewItems)
+                    RemoveBindingContext(item as BindableObject);
+                break;
+        }
+    }
+
+    private static void SetBindingContext(Element element, BindableObject bindable)
+    {
+        if (element != null && bindable != null)
+        {
+            var b = new Binding(nameof(element.BindingContext), source: element);
+            bindable.SetBinding(BindableObject.BindingContextProperty, b);
+        }
+    }
+
+    private static void RemoveBindingContext(BindableObject bindable)
+    {
+        bindable?.RemoveBinding(BindableObject.BindingContextProperty);
     }
 
     /// <summary>
@@ -408,6 +480,7 @@ public class CameraView : View, ICameraView
                 if (result == CameraResult.Success)
                 {
                     PluginDecoder?.ClearResults();
+                    PluginDecoders?.ToList().ForEach(x => x.ClearResults());
                     OnPropertyChanged(nameof(MinZoomFactor));
                     OnPropertyChanged(nameof(MaxZoomFactor));
                 }
@@ -440,6 +513,7 @@ public class CameraView : View, ICameraView
                 if (result == CameraResult.Success)
                 {
                     PluginDecoder?.ClearResults();
+                    PluginDecoders?.ToList().ForEach(x => x.ClearResults());
                     OnPropertyChanged(nameof(MinZoomFactor));
                     OnPropertyChanged(nameof(MaxZoomFactor));
                 }

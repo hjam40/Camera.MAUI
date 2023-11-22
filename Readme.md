@@ -96,10 +96,23 @@ Configure plugin:
     // ZXing
     cameraView.PluginDecoder = new Camera.MAUI.Plugin.ZXing.ZXingDecoder();
     cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
-
+```
+or
+```csharp
     // MLKit
     cameraView.PluginDecoder = new Camera.MAUI.Plugin.MLKit.MLKitBarcodeDecoder();
     cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
+```
+
+Configure a collection of plugins:
+```csharp
+    var zxing = new Camera.MAUI.Plugin.ZXing.ZXingDecoder();
+    zxing.Decoded += CameraView_BarcodeDetected;
+
+    cameraView.PluginDecoders = new PluginDecoderCollection
+    {
+        zxing
+    };
 ```
 
 Configure the camera and microphone to use:
@@ -247,7 +260,29 @@ The control has several binding properties for take an snapshot:
                          Results="{Binding BarCodeResults, Mode=OneWayToSource}" />
     </cv:CameraView.PluginDecoder>
 </cv:CameraView>
-  ```
+```
+
+To bind ```CameraView.PluginDecoders``` instead of ```CameraView.PluginDecoder```
+```xaml
+<cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="200"
+               Cameras="{Binding Cameras, Mode=OneWayToSource}" Camera="{Binding Camera}"
+               AutoStartPreview="{Binding AutoStartPreview}"
+               NumCamerasDetected="{Binding NumCameras, Mode=OneWayToSource}"
+               AutoSnapShotAsImageSource="True" AutoSnapShotFormat="PNG" 
+               TakeAutoSnapShot="{Binding TakeSnapshot}" AutoSnapShotSeconds="{Binding SnapshotSeconds}"
+               Microphones="{Binding Microphones, Mode=OneWayToSource}" Microphone="{Binding Microphone}"
+               NumMicrophonesDetected="{Binding NumMicrophones, Mode=OneWayToSource}"
+               AutoRecordingFile="{Binding RecordingFile}" 
+               AutoStartRecording="{Binding AutoStartRecording}">
+    <cv:CameraView.PluginDecoder>
+        <plugin:PluginDecoderCollection xmlns:plugin="clr-namespace:Camera.MAUI.Plugin;assembly=Camera.MAUI.Plugin">
+            <bc:ZXingDecoder Options="{Binding BarCodeOptions}"
+                             Results="{Binding BarCodeResults, Mode=OneWayToSource}" />
+        </plugin:PluginDecoderCollection>
+    </cv:CameraView.PluginDecoder>
+</cv:CameraView>
+```
+
 
 You have a complete example of MVVM in [MVVM Example](https://github.com/hjam40/Camera.MAUI/tree/master/Camera.MAUI.Test/MVVM)
 
