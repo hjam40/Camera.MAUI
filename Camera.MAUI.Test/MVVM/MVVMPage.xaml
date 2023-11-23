@@ -41,6 +41,12 @@
                     <CheckBox BindingContext="{x:Reference cameraView}" VerticalOptions="Center" Color="Black" IsChecked="{Binding BarCodeDetectionEnabled}" />
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center">
+                    <Label Text="Auto Start Preview" VerticalOptions="Center" TextColor="Black" />
+                    <CheckBox BindingContext="{x:Reference cameraView}" VerticalOptions="Center" Color="Black" IsChecked="{Binding AutoStartPreview}" />
+                    <Label Text="Auto Start Recording" VerticalOptions="Center" TextColor="Black" />
+                    <CheckBox BindingContext="{x:Reference cameraView}" VerticalOptions="Center" Color="Black" IsChecked="{Binding AutoStartRecording}" />
+                </HorizontalStackLayout>
+                <HorizontalStackLayout HorizontalOptions="Center">
                     <Label Text="AutoSnap freq: " VerticalOptions="Center" TextColor="Black" />
                     <Entry WidthRequest="20" Keyboard="Numeric" TextColor="Black" Text="{Binding Seconds, Mode=TwoWay}" />
                     <Label Text="Take Autosnap" VerticalOptions="Center" TextColor="Black" />

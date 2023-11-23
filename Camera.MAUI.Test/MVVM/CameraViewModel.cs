@@ -9,6 +9,9 @@ namespace Camera.MAUI.Test;
 public class CameraViewModel : INotifyPropertyChanged
 {
     private CameraInfo camera = null;
+    private bool takeSnapshot = false;
+    private bool autoStartPreview = false;
+    private bool autoStartRecording = false;
 
     public CameraInfo Camera
     {
@@ -17,10 +20,6 @@ public class CameraViewModel : INotifyPropertyChanged
         {
             camera = value;
             OnPropertyChanged(nameof(Camera));
-            AutoStartPreview = false;
-            OnPropertyChanged(nameof(AutoStartPreview));
-            AutoStartPreview = true;
-            OnPropertyChanged(nameof(AutoStartPreview));
         }
     }
 
@@ -78,11 +77,29 @@ public class CameraViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool AutoStartPreview
+    {
+        get => autoStartPreview;
+        set
+        {
+            autoStartPreview = value;
+            OnPropertyChanged(nameof(AutoStartPreview));
+        }
+    }
+
+    public bool AutoStartRecording
+    {
+        get => autoStartRecording;
+        set
+        {
+            autoStartRecording = value;
+            OnPropertyChanged(nameof(AutoStartRecording));
+        }
+    }
+
     public MediaSource VideoSource { get; set; }
     public BarcodeDecoderOptions BarCodeOptions { get; set; }
     public string BarcodeText { get; set; } = "No barcode detected";
-    public bool AutoStartPreview { get; set; } = false;
-    public bool AutoStartRecording { get; set; } = false;
     private IPluginResult[] barCodeResults;
 
     public IPluginResult[] BarCodeResults
@@ -103,8 +120,6 @@ public class CameraViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(BarcodeText));
         }
     }
-
-    private bool takeSnapshot = false;
 
     public bool TakeSnapshot
     {
@@ -159,12 +174,10 @@ public class CameraViewModel : INotifyPropertyChanged
         StartCamera = new Command(() =>
         {
             AutoStartPreview = true;
-            OnPropertyChanged(nameof(AutoStartPreview));
         });
         StopCamera = new Command(() =>
         {
             AutoStartPreview = false;
-            OnPropertyChanged(nameof(AutoStartPreview));
         });
         TakeSnapshotCmd = new Command(() =>
         {
@@ -180,12 +193,10 @@ public class CameraViewModel : INotifyPropertyChanged
         StartRecording = new Command(() =>
         {
             AutoStartRecording = true;
-            OnPropertyChanged(nameof(AutoStartRecording));
         });
         StopRecording = new Command(() =>
         {
             AutoStartRecording = false;
-            OnPropertyChanged(nameof(AutoStartRecording));
             VideoSource = MediaSource.FromFile(RecordingFile);
             OnPropertyChanged(nameof(VideoSource));
         });

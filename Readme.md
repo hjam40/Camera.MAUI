@@ -93,26 +93,26 @@ Configure the events:
 
 Configure plugin:
 ```csharp
-    // ZXing
-    cameraView.PluginDecoder = new Camera.MAUI.Plugin.ZXing.ZXingDecoder();
-    cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
+        // ZXing
+        cameraView.PluginDecoder = new Camera.MAUI.Plugin.ZXing.ZXingDecoder();
+        cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
 ```
 or
 ```csharp
-    // MLKit
-    cameraView.PluginDecoder = new Camera.MAUI.Plugin.MLKit.MLKitBarcodeDecoder();
-    cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
+        // MLKit
+        cameraView.PluginDecoder = new Camera.MAUI.Plugin.MLKit.MLKitBarcodeDecoder();
+        cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
 ```
 
 Configure a collection of plugins:
 ```csharp
-    var zxing = new Camera.MAUI.Plugin.ZXing.ZXingDecoder();
-    zxing.Decoded += CameraView_BarcodeDetected;
+        var zxing = new Camera.MAUI.Plugin.ZXing.ZXingDecoder();
+        zxing.Decoded += CameraView_BarcodeDetected;
 
-    cameraView.PluginDecoders = new PluginDecoderCollection
-    {
-        zxing
-    };
+        cameraView.PluginDecoders = new PluginDecoderCollection
+        {
+            zxing
+        };
 ```
 
 Configure the camera and microphone to use:
@@ -332,8 +332,10 @@ A ContentView control for generate codebars images.
 
 In XAML, make sure to add the right XML namespace:
 
-`xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`  
-`xmlns:bc="clr-namespace:Camera.MAUI.Plugin.ZXing;assembly=Camera.MAUI.Plugin.ZXing"`
+```xaml
+xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"
+xmlns:bc="clr-namespace:Camera.MAUI.Plugin.ZXing;assembly=Camera.MAUI.Plugin.ZXing"
+```
 
 Use the control and its bindable properties:
 ```xaml

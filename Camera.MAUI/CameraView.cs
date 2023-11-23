@@ -10,7 +10,7 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty TorchEnabledProperty = BindableProperty.Create(nameof(TorchEnabled), typeof(bool), typeof(CameraView), false);
     public static readonly BindableProperty CamerasProperty = BindableProperty.Create(nameof(Cameras), typeof(ObservableCollection<CameraInfo>), typeof(CameraView), new ObservableCollection<CameraInfo>());
     public static readonly BindableProperty NumCamerasDetectedProperty = BindableProperty.Create(nameof(NumCamerasDetected), typeof(int), typeof(CameraView), 0);
-    public static readonly BindableProperty CameraProperty = BindableProperty.Create(nameof(Camera), typeof(CameraInfo), typeof(CameraView), null, propertyChanged: CameraChanged);
+    public static readonly BindableProperty CameraProperty = BindableProperty.Create(nameof(Camera), typeof(CameraInfo), typeof(CameraView), null, propertyChanged: CameraChanged, defaultBindingMode: BindingMode.TwoWay);
     public static readonly BindableProperty MicrophonesProperty = BindableProperty.Create(nameof(Microphones), typeof(ObservableCollection<MicrophoneInfo>), typeof(CameraView), new ObservableCollection<MicrophoneInfo>());
     public static readonly BindableProperty NumMicrophonesDetectedProperty = BindableProperty.Create(nameof(NumMicrophonesDetected), typeof(int), typeof(CameraView), 0);
     public static readonly BindableProperty MicrophoneProperty = BindableProperty.Create(nameof(Microphone), typeof(MicrophoneInfo), typeof(CameraView), null);
@@ -24,9 +24,9 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty SnapShotStreamProperty = BindableProperty.Create(nameof(SnapShotStream), typeof(Stream), typeof(CameraView), null, BindingMode.OneWayToSource);
     public static readonly BindableProperty TakeAutoSnapShotProperty = BindableProperty.Create(nameof(TakeAutoSnapShot), typeof(bool), typeof(CameraView), false, propertyChanged: TakeAutoSnapShotChanged);
     public static readonly BindableProperty AutoSnapShotAsImageSourceProperty = BindableProperty.Create(nameof(AutoSnapShotAsImageSource), typeof(bool), typeof(CameraView), false);
-    public static readonly BindableProperty AutoStartPreviewProperty = BindableProperty.Create(nameof(AutoStartPreview), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartPreviewChanged);
+    public static readonly BindableProperty AutoStartPreviewProperty = BindableProperty.Create(nameof(AutoStartPreview), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartPreviewChanged, defaultBindingMode: BindingMode.TwoWay);
     public static readonly BindableProperty AutoRecordingFileProperty = BindableProperty.Create(nameof(AutoRecordingFile), typeof(string), typeof(CameraView), string.Empty);
-    public static readonly BindableProperty AutoStartRecordingProperty = BindableProperty.Create(nameof(AutoStartRecording), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartRecordingChanged);
+    public static readonly BindableProperty AutoStartRecordingProperty = BindableProperty.Create(nameof(AutoStartRecording), typeof(bool), typeof(CameraView), false, propertyChanged: AutoStartRecordingChanged, defaultBindingMode: BindingMode.TwoWay);
     public static readonly BindableProperty PluginDecoderProperty = BindableProperty.Create(nameof(PluginDecoder), typeof(IPluginDecoder), typeof(CameraView), null, propertyChanged: PluginDecoderChanged);
     public static readonly BindableProperty PluginDecodersProperty = BindableProperty.Create(nameof(PluginDecoders), typeof(PluginDecoderCollection), typeof(CameraView), null, propertyChanged: PluginDecodersChanged);
 
@@ -337,6 +337,15 @@ public class CameraView : View, ICameraView
         {
             cameraView.OnPropertyChanged(nameof(MinZoomFactor));
             cameraView.OnPropertyChanged(nameof(MaxZoomFactor));
+            if (cameraView.AutoStartPreview)
+            {
+                cameraView.StartCameraAsync().Wait();
+            }
+            else if (cameraView.AutoStartRecording)
+            {
+                if (!string.IsNullOrEmpty(cameraView.AutoRecordingFile))
+                    cameraView.StartRecordingAsync(cameraView.AutoRecordingFile).Wait();
+            }
         }
     }
 
