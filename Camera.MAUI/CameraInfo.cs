@@ -10,8 +10,12 @@ public class CameraInfo
     public float MaxZoomFactor { get; internal set; }
     public float HorizontalViewAngle { get; internal set; }
     public float VerticalViewAngle { get; internal set; }
-
     public List<Size> AvailableResolutions { get; internal set; }
+
+#if ANDROID30_0_OR_GREATER
+    public bool UseZoomRatio { get; internal set; }
+#endif
+
     public override string ToString()
     {
         return Name;

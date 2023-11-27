@@ -96,7 +96,26 @@ internal class MauiCameraView : GridLayout
                     cameraInfo.Name = "Camera " + id;
                     cameraInfo.Position = CameraPosition.Unknow;
                 }
-                cameraInfo.MaxZoomFactor = (float)(chars.Get(CameraCharacteristics.ScalerAvailableMaxDigitalZoom) as Java.Lang.Number);
+#if ANDROID30_0_OR_GREATER
+                if (OperatingSystem.IsAndroidVersionAtLeast(30))
+                {
+                    if (chars.Get(CameraCharacteristics.ControlZoomRatioRange) is Android.Util.Range zoomRatio)
+                    {
+                        cameraInfo.MinZoomFactor = (float)zoomRatio.Lower;
+                        cameraInfo.MaxZoomFactor = (float)zoomRatio.Upper;
+                        cameraInfo.UseZoomRatio = true;
+                    }
+                    else
+                    {
+                        // Fallback to pre API 30 method if hardware doesn't support.
+                        cameraInfo.UseZoomRatio = false;
+                    }
+                }
+                if (!cameraInfo.UseZoomRatio)
+#endif
+                {
+                    cameraInfo.MaxZoomFactor = (float)(chars.Get(CameraCharacteristics.ScalerAvailableMaxDigitalZoom) as Java.Lang.Number);
+                }
                 cameraInfo.HasFlashUnit = (bool)(chars.Get(CameraCharacteristics.FlashInfoAvailable) as Java.Lang.Boolean);
                 cameraInfo.AvailableResolutions = new();
                 try
@@ -701,18 +720,24 @@ internal class MauiCameraView : GridLayout
             {
                 try
                 {
-                    //if (OperatingSystem.IsAndroidVersionAtLeast(30))
-                    //{
-                    //previewBuilder.Set(CaptureRequest.ControlZoomRatio, Math.Max(Camera.MinZoomFactor, Math.Min(zoom, Camera.MaxZoomFactor)));
-                    //}
-                    var destZoom = Math.Clamp(zoom, 1, Math.Min(6, cameraView.Camera.MaxZoomFactor)) - 1;
-                    Rect m = (Rect)camChars.Get(CameraCharacteristics.SensorInfoActiveArraySize);
-                    int minW = (int)(m.Width() / (cameraView.Camera.MaxZoomFactor));
-                    int minH = (int)(m.Height() / (cameraView.Camera.MaxZoomFactor));
-                    int newWidth = (int)(m.Width() - (minW * destZoom));
-                    int newHeight = (int)(m.Height() - (minH * destZoom));
-                    Rect zoomArea = new((m.Width() - newWidth) / 2, (m.Height() - newHeight) / 2, newWidth, newHeight);
-                    previewBuilder.Set(CaptureRequest.ScalerCropRegion, zoomArea);
+#if ANDROID30_0_OR_GREATER
+                    if (OperatingSystem.IsAndroidVersionAtLeast(30) && cameraView.Camera.UseZoomRatio)
+                    {
+                        previewBuilder.Set(CaptureRequest.ControlZoomRatio, Math.Max(cameraView.Camera.MinZoomFactor, Math.Min(zoom, cameraView.Camera.MaxZoomFactor)));
+                    }
+                    else
+#endif
+                    {
+                        var newZoom = Math.Clamp(zoom, 1, cameraView.Camera.MaxZoomFactor);
+                        var m = (Rect)camChars.Get(CameraCharacteristics.SensorInfoActiveArraySize);
+                        var centerX = m.Width() / 2;
+                        var centerY = m.Height() / 2;
+                        var deltaX = (int)(0.5f * m.Width() / newZoom);
+                        var deltaY = (int)(0.5f * m.Height() / newZoom);
+
+                        var mCropRegion = new Rect(centerX - deltaX, centerY - deltaY, centerX + deltaX, centerY + deltaY);
+                        previewBuilder.Set(CaptureRequest.ScalerCropRegion, mCropRegion);
+                    }
                     previewSession.SetRepeatingRequest(previewBuilder.Build(), null, null);
                 }
                 catch (Java.Lang.IllegalStateException) { }
