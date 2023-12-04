@@ -46,6 +46,7 @@ public partial class SizedPage : ContentPage
                     TryHarder = false,
                     TryInverted = true
                 };
+                decoder.ControlBarcodeResultDuplicate = true;
             }
         }
         BindingContext = cameraView;
@@ -148,7 +149,7 @@ public partial class SizedPage : ContentPage
 
     private void CheckBox3_CheckedChanged(object sender, CheckedChangedEventArgs e)
     {
-        cameraView.BarCodeDetectionEnabled = e.Value;
+        cameraView.PluginProcessingEnabled = e.Value;
     }
 
     private void Stepper_ValueChanged(object sender, ValueChangedEventArgs e)

@@ -531,7 +531,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         {
             try
             {
-                UIImage image2 = null;
+                UIImage img = null;
                 await MainThread.InvokeOnMainThreadAsync(() =>
                 {
                     lock (lockCapture)
@@ -539,13 +539,16 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         var ciContext = new CIContext();
                         CGImage cgImage = ciContext.CreateCGImage(lastCapture, lastCapture.Extent);
                         var image = UIImage.FromImage(cgImage, UIScreen.MainScreen.Scale, UIImageOrientation.Right);
-                        image2 = CropImage(image);
+                        img = CropImage(image);
                     }
                 });
-                if (image2 != null)
+                if (img != null)
                 {
-                    cameraView.PluginDecoder?.Decode(image2);
-                    cameraView.PluginDecoders?.ToList().ForEach(x => x.Decode(image2));
+                    cameraView.PluginDecoder?.Decode(img);
+                    cameraView.PluginDecoders?
+                        .Where(x => x != cameraView.PluginDecoder)
+                        .ToList()
+                        .ForEach(x => x.Decode(img));
                 }
             }
             catch
@@ -569,21 +572,21 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
             }
             if (!snapping && cameraView.AutoSnapShotSeconds > 0 && (DateTime.Now - cameraView.lastSnapshot).TotalSeconds >= cameraView.AutoSnapShotSeconds)
                 cameraView.RefreshSnapshot(GetSnapShot(cameraView.AutoSnapShotFormat, true));
-            else if (cameraView.BarCodeDetectionEnabled && currentFrames >= cameraView.BarCodeDetectionFrameRate)
+            else if (cameraView.PluginProcessingEnabled && currentFrames >= cameraView.PluginProcessingSkipFrames)
             {
                 bool processPlugin = false;
                 lock (cameraView.currentThreadsLocker)
                 {
-                    if (cameraView.currentThreads < cameraView.BarCodeDetectionMaxThreads)
+                    if (cameraView.currentThreads < cameraView.PluginProcessingMaxThreads)
                     {
-                        processPlugin = true;
                         cameraView.currentThreads++;
+                        processPlugin = true;
+                        currentFrames = 0;
                     }
                 }
                 if (processPlugin)
                 {
                     ProcessPlugin();
-                    currentFrames = 0;
                     lock (cameraView.currentThreadsLocker) cameraView.currentThreads--;
                 }
             }
@@ -595,7 +598,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     {
         frames++;
         currentFrames++;
-        if (frames >= 12 || cameraView.BarCodeDetectionEnabled && currentFrames >= cameraView.BarCodeDetectionFrameRate)
+        if (frames >= 12 || cameraView.PluginProcessingEnabled && currentFrames >= cameraView.PluginProcessingSkipFrames)
         {
             var capture = CIImage.FromImageBuffer(sampleBuffer.GetImageBuffer());
             ProcessImage(capture);

@@ -25,7 +25,7 @@ namespace Camera.MAUI.Plugin.ZXing
         #region Public Properties
 
         /// <summary>
-        /// If true BarcodeDetected event will invoke only if a Results is diferent from preview Results
+        /// If true Decoded event will invoke only if a Results is diferent from preview Results
         /// </summary>
         public bool ControlBarcodeResultDuplicate { get; set; } = false;
 

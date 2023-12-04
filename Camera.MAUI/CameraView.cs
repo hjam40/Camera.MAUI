@@ -15,8 +15,8 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty NumMicrophonesDetectedProperty = BindableProperty.Create(nameof(NumMicrophonesDetected), typeof(int), typeof(CameraView), 0);
     public static readonly BindableProperty MicrophoneProperty = BindableProperty.Create(nameof(Microphone), typeof(MicrophoneInfo), typeof(CameraView), null);
     public static readonly BindableProperty MirroredImageProperty = BindableProperty.Create(nameof(MirroredImage), typeof(bool), typeof(CameraView), false);
-    public static readonly BindableProperty BarCodeDetectionEnabledProperty = BindableProperty.Create(nameof(BarCodeDetectionEnabled), typeof(bool), typeof(CameraView), false);
-    public static readonly BindableProperty BarCodeDetectionFrameRateProperty = BindableProperty.Create(nameof(BarCodeDetectionFrameRate), typeof(int), typeof(CameraView), 10);
+    public static readonly BindableProperty PluginProcessingEnabledProperty = BindableProperty.Create(nameof(PluginProcessingEnabled), typeof(bool), typeof(CameraView), false);
+    public static readonly BindableProperty PluginProcessingSkipFramesProperty = BindableProperty.Create(nameof(PluginProcessingSkipFrames), typeof(int), typeof(CameraView), 10);
     public static readonly BindableProperty ZoomFactorProperty = BindableProperty.Create(nameof(ZoomFactor), typeof(float), typeof(CameraView), 1f);
     public static readonly BindableProperty AutoSnapShotSecondsProperty = BindableProperty.Create(nameof(AutoSnapShotSeconds), typeof(float), typeof(CameraView), 0f);
     public static readonly BindableProperty AutoSnapShotFormatProperty = BindableProperty.Create(nameof(AutoSnapShotFormat), typeof(ImageFormat), typeof(CameraView), ImageFormat.PNG);
@@ -121,27 +121,27 @@ public class CameraView : View, ICameraView
     }
 
     /// <summary>
-    /// Turns on and off the barcode detection. This is a bindable property.
+    /// Turns on and off the plugin(s) processing. This is a bindable property.
     /// </summary>
-    public bool BarCodeDetectionEnabled
+    public bool PluginProcessingEnabled
     {
-        get { return (bool)GetValue(BarCodeDetectionEnabledProperty); }
-        set { SetValue(BarCodeDetectionEnabledProperty, value); }
+        get { return (bool)GetValue(PluginProcessingEnabledProperty); }
+        set { SetValue(PluginProcessingEnabledProperty, value); }
     }
 
     /// <summary>
-    /// Indicates every how many frames the control tries to detect a barcode in the image. This is a bindable property.
+    /// Indicates every how many frames to skip before delivering it to the plugin(s). This is a bindable property.
     /// </summary>
-    public int BarCodeDetectionFrameRate
+    public int PluginProcessingSkipFrames
     {
-        get { return (int)GetValue(BarCodeDetectionFrameRateProperty); }
-        set { SetValue(BarCodeDetectionFrameRateProperty, value); }
+        get { return (int)GetValue(PluginProcessingSkipFramesProperty); }
+        set { SetValue(PluginProcessingSkipFramesProperty, value); }
     }
 
     /// <summary>
-    /// Indicates the maximun number of simultaneous running threads for barcode detection
+    /// Indicates the maximun number of simultaneous running threads for plugin(s) execution.
     /// </summary>
-    public int BarCodeDetectionMaxThreads { get; set; } = 3;
+    public int PluginProcessingMaxThreads { get; set; } = 3;
 
     internal int currentThreads = 0;
     internal object currentThreadsLocker = new();

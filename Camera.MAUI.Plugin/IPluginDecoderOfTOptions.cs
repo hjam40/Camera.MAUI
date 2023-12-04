@@ -12,7 +12,7 @@
         TOptions Options { get; set; }
 
         /// <summary>
-        /// It refresh each time a successful decode occurs, if "Camera.MAUI.CameraView.BarCodeDetectionEnabled" property is true.
+        /// It refresh each time a successful decode occurs, if "Camera.MAUI.CameraView.PluginProcessingEnabled" property is true.
         /// </summary>
         TResult[] Results { get; set; }
 

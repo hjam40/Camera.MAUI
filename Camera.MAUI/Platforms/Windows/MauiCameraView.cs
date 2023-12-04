@@ -353,7 +353,10 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
                         if (img.PixelWidth > 0 && img.PixelHeight > 0)
                         {
                             cameraView.PluginDecoder?.Decode(img);
-                            cameraView.PluginDecoders?.ToList().ForEach(x => x.Decode(img));
+                            cameraView.PluginDecoders?
+                                .Where(x => x != cameraView.PluginDecoder)
+                                .ToList()
+                                .ForEach(x => x.Decode(img));
                         }
                         img.Dispose();
                     }
@@ -375,25 +378,25 @@ public sealed partial class MauiCameraView : UserControl, IDisposable
         {
             Task.Run(() => RefreshSnapShot());
         }
-        else if (cameraView.BarCodeDetectionEnabled)
+        else if (cameraView.PluginProcessingEnabled)
         {
             frames++;
-            if (frames >= cameraView.BarCodeDetectionFrameRate)
+            if (frames >= cameraView.PluginProcessingSkipFrames)
             {
                 bool processPlugin = false;
                 lock (cameraView.currentThreadsLocker)
                 {
-                    if (cameraView.currentThreads < cameraView.BarCodeDetectionMaxThreads)
+                    if (cameraView.currentThreads < cameraView.PluginProcessingMaxThreads)
                     {
                         cameraView.currentThreads++;
                         processPlugin = true;
+                        frames = 0;
                     }
                 }
                 if (processPlugin)
                 {
                     var frame = sender.TryAcquireLatestFrame();
                     ProcessPlugin(frame.VideoMediaFrame.SoftwareBitmap);
-                    frames = 0;
                 }
             }
         }

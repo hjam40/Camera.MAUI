@@ -19,7 +19,7 @@ namespace Camera.MAUI.Plugin
         #region Public Events
 
         /// <summary>
-        /// Event launched every time a successful decode occurs in the image if "Camera.MAUI.CameraView.BarCodeDetectionEnabled" is set to true.
+        /// Event launched every time a successful decode occurs in the image if "Camera.MAUI.CameraView.PluginProcessingEnabled" is set to true.
         /// </summary>
         event PluginDecoderResultHandler Decoded;
 

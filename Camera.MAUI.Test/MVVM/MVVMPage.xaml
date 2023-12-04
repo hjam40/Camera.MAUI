@@ -38,7 +38,7 @@
                     <Label Text="Torch" VerticalOptions="Center" TextColor="Black" />
                     <CheckBox BindingContext="{x:Reference cameraView}" VerticalOptions="Center" Color="Black" IsChecked="{Binding TorchEnabled}" />
                     <Label Text="QR Detec." VerticalOptions="Center" TextColor="Black" />
-                    <CheckBox BindingContext="{x:Reference cameraView}" VerticalOptions="Center" Color="Black" IsChecked="{Binding BarCodeDetectionEnabled}" />
+                    <CheckBox BindingContext="{x:Reference cameraView}" VerticalOptions="Center" Color="Black" IsChecked="{Binding PluginProcessingEnabled}" />
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center">
                     <Label Text="Auto Start Preview" VerticalOptions="Center" TextColor="Black" />

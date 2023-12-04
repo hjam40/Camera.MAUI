@@ -57,8 +57,7 @@ internal class MauiCameraView : GridLayout
         this.cameraView = cameraView;
 
         textureView = new(context);
-        //timer = new(33.3);
-        timer = new(TimeSpan.FromSeconds(1));
+        timer = new(33.3);
         timer.Elapsed += Timer_Elapsed;
         stateListener = new MyCameraStateCallback(this);
         photoListener = new ImageAvailableListener(this);
@@ -420,12 +419,15 @@ internal class MauiCameraView : GridLayout
         {
             if (cameraView.PluginDecoder != null || cameraView.PluginDecoders?.Count > 0)
             {
-                Bitmap bitmap = TakeSnap();
+                var bitmap = TakeSnap();
                 if (bitmap != null)
                 {
                     System.Diagnostics.Debug.WriteLine($"Processing Plugin ({bitmap.Width}x{bitmap.Height}) " + DateTime.Now.ToString("mm:ss:fff"));
                     cameraView.PluginDecoder?.Decode(bitmap);
-                    cameraView.PluginDecoders?.ToList().ForEach(x => x.Decode(bitmap));
+                    cameraView.PluginDecoders?
+                        .Where(x => x != cameraView.PluginDecoder)
+                        .ToList()
+                        .ForEach(x => x.Decode(bitmap));
                     bitmap.Dispose();
                     System.Diagnostics.Debug.WriteLine("Plugin Processed " + DateTime.Now.ToString("mm:ss:fff"));
                     GC.Collect();
@@ -445,24 +447,24 @@ internal class MauiCameraView : GridLayout
         {
             Task.Run(() => RefreshSnapShot());
         }
-        else if (cameraView.BarCodeDetectionEnabled)
+        else if (cameraView.PluginProcessingEnabled)
         {
             frames++;
-            if (frames >= cameraView.BarCodeDetectionFrameRate)
+            if (frames >= cameraView.PluginProcessingSkipFrames)
             {
                 bool processPlugin = false;
                 lock (cameraView.currentThreadsLocker)
                 {
-                    if (cameraView.currentThreads < cameraView.BarCodeDetectionMaxThreads)
+                    if (cameraView.currentThreads < cameraView.PluginProcessingMaxThreads)
                     {
                         cameraView.currentThreads++;
                         processPlugin = true;
+                        frames = 0;
                     }
                 }
                 if (processPlugin)
                 {
                     ProcessPlugin();
-                    frames = 0;
                 }
             }
         }

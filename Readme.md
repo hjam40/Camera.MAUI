@@ -300,6 +300,7 @@ Enable and Handle barcodes detection:
             TryHarder = false,
             TryInverted = true
         };
+        zxingDecoder.ControlBarcodeResultDuplicate = true;
     }
     if (cameraView.PluginDecoder is MLKitBarcodeDecoder mlkitDecoder)
     {
@@ -308,10 +309,9 @@ Enable and Handle barcodes detection:
             PossibleFormats = { Plugin.BarcodeFormat.QR_CODE },
         };
     }
-    cameraView.BarCodeDetectionFrameRate = 10;
-    cameraView.BarCodeDetectionMaxThreads = 5;
-    cameraView.ControlBarcodeResultDuplicate = true;
-    cameraView.BarCodeDetectionEnabled = true;
+    cameraView.PluginProcessingFrameRate = 10;
+    cameraView.PluginProcessingMaxThreads = 5;
+    cameraView.PluginProcessingEnabled = true;
 
     private void CameraView_BarcodeDetected(object sender, ZXingHelper.BarcodeEventArgs args)
     {
@@ -320,9 +320,9 @@ Enable and Handle barcodes detection:
 ```
 Use the event or the bindable property BarCodeResults
 ```csharp
-    /// Event launched every time a successful decode occurs in the image if "Camera.MAUI.CameraView.BarCodeDetectionEnabled" is set to true.
+    /// Event launched every time a successful decode occurs in the image if "Camera.MAUI.CameraView.PluginProcessingEnabled" is set to true.
     public event PluginDecoderResultHandler Decoded;
-    /// It refresh each time a successful decode occurs, if "Camera.MAUI.CameraView.BarCodeDetectionEnabled" property is true.
+    /// It refresh each time a successful decode occurs, if "Camera.MAUI.CameraView.PluginProcessingEnabled" property is true.
     public IPluginResult[] Results
 ```
 
