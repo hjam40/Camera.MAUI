@@ -525,7 +525,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         return croppedImage;
     }
 
-    private async void ProcessPlugin()
+    private async Task ProcessPluginAsync()
     {
         if (cameraView.PluginDecoder != null || cameraView.PluginDecoders?.Count > 0)
         {
@@ -559,7 +559,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
 
     private void ProcessImage(CIImage capture)
     {
-        new Task(() =>
+        new Task(async () =>
         {
             lock (lockCapture)
             {
@@ -586,7 +586,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                 }
                 if (processPlugin)
                 {
-                    ProcessPlugin();
+                    await ProcessPluginAsync();
                     lock (cameraView.currentThreadsLocker) cameraView.currentThreads--;
                 }
             }
