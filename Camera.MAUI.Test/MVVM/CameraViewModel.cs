@@ -1,35 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Camera.MAUI.Plugin;
+using Camera.MAUI.Plugin.ZXing;
+using CommunityToolkit.Maui.Views;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ZXing;
-using System.Windows.Markup;
-using System.Collections.Specialized;
-using Camera.MAUI.ZXingHelper;
-using CommunityToolkit.Maui.Views;
 
 namespace Camera.MAUI.Test;
 
 public class CameraViewModel : INotifyPropertyChanged
 {
     private CameraInfo camera = null;
-    public CameraInfo Camera 
+    private bool takeSnapshot = false;
+    private bool autoStartPreview = false;
+    private bool autoStartRecording = false;
+
+    public CameraInfo Camera
     {
         get => camera;
         set
         {
             camera = value;
             OnPropertyChanged(nameof(Camera));
-            AutoStartPreview = false;
-            OnPropertyChanged(nameof(AutoStartPreview));
-            AutoStartPreview = true;
-            OnPropertyChanged(nameof(AutoStartPreview));
         }
     }
+
     private ObservableCollection<CameraInfo> cameras = new();
+
     public ObservableCollection<CameraInfo> Cameras
     {
         get => cameras;
@@ -39,6 +34,7 @@ public class CameraViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(Cameras));
         }
     }
+
     public int NumCameras
     {
         set
@@ -47,7 +43,9 @@ public class CameraViewModel : INotifyPropertyChanged
                 Camera = Cameras.First();
         }
     }
+
     private MicrophoneInfo micro = null;
+
     public MicrophoneInfo Microphone
     {
         get => micro;
@@ -57,7 +55,9 @@ public class CameraViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(Microphone));
         }
     }
+
     private ObservableCollection<MicrophoneInfo> micros = new();
+
     public ObservableCollection<MicrophoneInfo> Microphones
     {
         get => micros;
@@ -67,6 +67,7 @@ public class CameraViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(Microphones));
         }
     }
+
     public int NumMicrophones
     {
         set
@@ -75,36 +76,63 @@ public class CameraViewModel : INotifyPropertyChanged
                 Microphone = Microphones.First();
         }
     }
+
+    public bool AutoStartPreview
+    {
+        get => autoStartPreview;
+        set
+        {
+            autoStartPreview = value;
+            OnPropertyChanged(nameof(AutoStartPreview));
+        }
+    }
+
+    public bool AutoStartRecording
+    {
+        get => autoStartRecording;
+        set
+        {
+            autoStartRecording = value;
+            OnPropertyChanged(nameof(AutoStartRecording));
+        }
+    }
+
     public MediaSource VideoSource { get; set; }
-    public BarcodeDecodeOptions BarCodeOptions { get; set; }
+    public BarcodeDecoderOptions BarCodeOptions { get; set; }
     public string BarcodeText { get; set; } = "No barcode detected";
-    public bool AutoStartPreview { get; set; } = false;
-    public bool AutoStartRecording { get; set; } = false;
-    private Result[] barCodeResults;
-    public Result[] BarCodeResults 
+    private IPluginResult[] barCodeResults;
+
+    public IPluginResult[] BarCodeResults
     {
         get => barCodeResults;
         set
         {
             barCodeResults = value;
             if (barCodeResults != null && barCodeResults.Length > 0)
-                BarcodeText = barCodeResults[0].Text;
+            {
+                if (barCodeResults is BarcodeResult[] results)
+                {
+                    BarcodeText = results[0].Text;
+                }
+            }
             else
                 BarcodeText = "No barcode detected";
             OnPropertyChanged(nameof(BarcodeText));
         }
     }
-    private bool takeSnapshot = false;
-    public bool TakeSnapshot 
-    { 
+
+    public bool TakeSnapshot
+    {
         get => takeSnapshot;
         set
         {
             takeSnapshot = value;
             OnPropertyChanged(nameof(TakeSnapshot));
-        } 
+        }
     }
+
     public float SnapshotSeconds { get; set; } = 0f;
+
     public string Seconds
     {
         get => SnapshotSeconds.ToString();
@@ -117,6 +145,7 @@ public class CameraViewModel : INotifyPropertyChanged
             }
         }
     }
+
     public Command StartCamera { get; set; }
     public Command StopCamera { get; set; }
     public Command TakeSnapshotCmd { get; set; }
@@ -130,12 +159,13 @@ public class CameraViewModel : INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
+
     public CameraViewModel()
     {
-        BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
+        BarCodeOptions = new ZXingDecoderOptions
         {
             AutoRotate = true,
-            PossibleFormats = { ZXing.BarcodeFormat.QR_CODE },
+            PossibleFormats = { Plugin.BarcodeFormat.QR_CODE },
             ReadMultipleCodes = false,
             TryHarder = true,
             TryInverted = true
@@ -144,12 +174,10 @@ public class CameraViewModel : INotifyPropertyChanged
         StartCamera = new Command(() =>
         {
             AutoStartPreview = true;
-            OnPropertyChanged(nameof(AutoStartPreview));
         });
         StopCamera = new Command(() =>
         {
             AutoStartPreview = false;
-            OnPropertyChanged(nameof(AutoStartPreview));
         });
         TakeSnapshotCmd = new Command(() =>
         {
@@ -165,12 +193,10 @@ public class CameraViewModel : INotifyPropertyChanged
         StartRecording = new Command(() =>
         {
             AutoStartRecording = true;
-            OnPropertyChanged(nameof(AutoStartRecording));
         });
         StopRecording = new Command(() =>
         {
             AutoStartRecording = false;
-            OnPropertyChanged(nameof(AutoStartRecording));
             VideoSource = MediaSource.FromFile(RecordingFile);
             OnPropertyChanged(nameof(VideoSource));
         });

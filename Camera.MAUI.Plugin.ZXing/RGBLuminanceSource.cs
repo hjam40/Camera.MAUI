@@ -1,8 +1,8 @@
 ﻿using ZXing;
 
-namespace Camera.MAUI.ZXingHelper;
+namespace Camera.MAUI.Plugin.ZXing;
 
-internal partial class RGBLuminanceSource : BaseLuminanceSource
+public class RGBLuminanceSource : BaseLuminanceSource
 {
     public enum BitmapFormat
     {
@@ -25,10 +25,12 @@ internal partial class RGBLuminanceSource : BaseLuminanceSource
        : base(width, height)
     {
     }
+
     protected override LuminanceSource CreateLuminanceSource(byte[] newLuminances, int width, int height)
     {
         return new RGBLuminanceSource(width, height) { luminances = newLuminances };
     }
+
     private static BitmapFormat DetermineBitmapFormat(byte[] rgbRawBytes, int width, int height)
     {
         var square = width * height;
@@ -43,6 +45,7 @@ internal partial class RGBLuminanceSource : BaseLuminanceSource
             _ => throw new ArgumentException("The bitmap format could not be determined. Please specify the correct value."),
         };
     }
+
     protected void CalculateLuminance(byte[] rgbRawBytes, BitmapFormat bitmapFormat)
     {
         if (bitmapFormat == BitmapFormat.Unknown)
@@ -54,39 +57,51 @@ internal partial class RGBLuminanceSource : BaseLuminanceSource
             case BitmapFormat.Gray8:
                 Buffer.BlockCopy(rgbRawBytes, 0, luminances, 0, rgbRawBytes.Length < luminances.Length ? rgbRawBytes.Length : luminances.Length);
                 break;
+
             case BitmapFormat.Gray16:
                 CalculateLuminanceGray16(rgbRawBytes);
                 break;
+
             case BitmapFormat.RGB24:
                 CalculateLuminanceRGB24(rgbRawBytes);
                 break;
+
             case BitmapFormat.BGR24:
                 CalculateLuminanceBGR24(rgbRawBytes);
                 break;
+
             case BitmapFormat.RGB32:
                 CalculateLuminanceRGB32(rgbRawBytes);
                 break;
+
             case BitmapFormat.BGR32:
                 CalculateLuminanceBGR32(rgbRawBytes);
                 break;
+
             case BitmapFormat.RGBA32:
                 CalculateLuminanceRGBA32(rgbRawBytes);
                 break;
+
             case BitmapFormat.ARGB32:
                 CalculateLuminanceARGB32(rgbRawBytes);
                 break;
+
             case BitmapFormat.BGRA32:
                 CalculateLuminanceBGRA32(rgbRawBytes);
                 break;
+
             case BitmapFormat.RGB565:
                 CalculateLuminanceRGB565(rgbRawBytes);
                 break;
+
             case BitmapFormat.UYVY:
                 CalculateLuminanceUYVY(rgbRawBytes);
                 break;
+
             case BitmapFormat.YUYV:
                 CalculateLuminanceYUYV(rgbRawBytes);
                 break;
+
             default:
                 throw new ArgumentException("The bitmap format isn't supported.", bitmapFormat.ToString());
         }
@@ -101,13 +116,13 @@ internal partial class RGBLuminanceSource : BaseLuminanceSource
             var byte2 = rgb565RawData[index + 1];
 
             var b5 = byte1 & 0x1F;
-            var g5 = (((byte1 & 0xE0) >> 5) | ((byte2 & 0x03) << 3)) & 0x1F;
-            var r5 = (byte2 >> 2) & 0x1F;
-            var r8 = (r5 * 527 + 23) >> 6;
-            var g8 = (g5 * 527 + 23) >> 6;
-            var b8 = (b5 * 527 + 23) >> 6;
+            var g5 = ((byte1 & 0xE0) >> 5 | (byte2 & 0x03) << 3) & 0x1F;
+            var r5 = byte2 >> 2 & 0x1F;
+            var r8 = r5 * 527 + 23 >> 6;
+            var g8 = g5 * 527 + 23 >> 6;
+            var b8 = b5 * 527 + 23 >> 6;
 
-            luminances[luminanceIndex] = (byte)((RChannelWeight * r8 + GChannelWeight * g8 + BChannelWeight * b8) >> ChannelWeight);
+            luminances[luminanceIndex] = (byte)(RChannelWeight * r8 + GChannelWeight * g8 + BChannelWeight * b8 >> ChannelWeight);
         }
     }
 
@@ -119,7 +134,7 @@ internal partial class RGBLuminanceSource : BaseLuminanceSource
             int r = rgbRawBytes[rgbIndex++];
             int g = rgbRawBytes[rgbIndex++];
             int b = rgbRawBytes[rgbIndex++];
-            luminances[luminanceIndex] = (byte)((RChannelWeight * r + GChannelWeight * g + BChannelWeight * b) >> ChannelWeight);
+            luminances[luminanceIndex] = (byte)(RChannelWeight * r + GChannelWeight * g + BChannelWeight * b >> ChannelWeight);
         }
     }
 
@@ -131,7 +146,7 @@ internal partial class RGBLuminanceSource : BaseLuminanceSource
             int b = rgbRawBytes[rgbIndex++];
             int g = rgbRawBytes[rgbIndex++];
             int r = rgbRawBytes[rgbIndex++];
-            luminances[luminanceIndex] = (byte)((RChannelWeight * r + GChannelWeight * g + BChannelWeight * b) >> ChannelWeight);
+            luminances[luminanceIndex] = (byte)(RChannelWeight * r + GChannelWeight * g + BChannelWeight * b >> ChannelWeight);
         }
     }
 
@@ -144,7 +159,7 @@ internal partial class RGBLuminanceSource : BaseLuminanceSource
             int g = rgbRawBytes[rgbIndex++];
             int b = rgbRawBytes[rgbIndex++];
             rgbIndex++;
-            luminances[luminanceIndex] = (byte)((RChannelWeight * r + GChannelWeight * g + BChannelWeight * b) >> ChannelWeight);
+            luminances[luminanceIndex] = (byte)(RChannelWeight * r + GChannelWeight * g + BChannelWeight * b >> ChannelWeight);
         }
     }
 
@@ -157,7 +172,7 @@ internal partial class RGBLuminanceSource : BaseLuminanceSource
             int g = rgbRawBytes[rgbIndex++];
             int r = rgbRawBytes[rgbIndex++];
             rgbIndex++;
-            luminances[luminanceIndex] = (byte)((RChannelWeight * r + GChannelWeight * g + BChannelWeight * b) >> ChannelWeight);
+            luminances[luminanceIndex] = (byte)(RChannelWeight * r + GChannelWeight * g + BChannelWeight * b >> ChannelWeight);
         }
     }
 
@@ -170,8 +185,8 @@ internal partial class RGBLuminanceSource : BaseLuminanceSource
             var g = rgbRawBytes[rgbIndex++];
             var r = rgbRawBytes[rgbIndex++];
             var alpha = rgbRawBytes[rgbIndex++];
-            var luminance = (byte)((RChannelWeight * r + GChannelWeight * g + BChannelWeight * b) >> ChannelWeight);
-            luminances[luminanceIndex] = (byte)(((luminance * alpha) >> 8) + (255 * (255 - alpha) >> 8));
+            var luminance = (byte)(RChannelWeight * r + GChannelWeight * g + BChannelWeight * b >> ChannelWeight);
+            luminances[luminanceIndex] = (byte)((luminance * alpha >> 8) + (255 * (255 - alpha) >> 8));
         }
     }
 
@@ -184,8 +199,8 @@ internal partial class RGBLuminanceSource : BaseLuminanceSource
             var g = rgbRawBytes[rgbIndex++];
             var b = rgbRawBytes[rgbIndex++];
             var alpha = rgbRawBytes[rgbIndex++];
-            var luminance = (byte)((RChannelWeight * r + GChannelWeight * g + BChannelWeight * b) >> ChannelWeight);
-            luminances[luminanceIndex] = (byte)(((luminance * alpha) >> 8) + (255 * (255 - alpha) >> 8));
+            var luminance = (byte)(RChannelWeight * r + GChannelWeight * g + BChannelWeight * b >> ChannelWeight);
+            luminances[luminanceIndex] = (byte)((luminance * alpha >> 8) + (255 * (255 - alpha) >> 8));
         }
     }
 
@@ -198,8 +213,8 @@ internal partial class RGBLuminanceSource : BaseLuminanceSource
             var r = rgbRawBytes[rgbIndex++];
             var g = rgbRawBytes[rgbIndex++];
             var b = rgbRawBytes[rgbIndex++];
-            var luminance = (byte)((RChannelWeight * r + GChannelWeight * g + BChannelWeight * b) >> ChannelWeight);
-            luminances[luminanceIndex] = (byte)(((luminance * alpha) >> 8) + (255 * (255 - alpha) >> 8));
+            var luminance = (byte)(RChannelWeight * r + GChannelWeight * g + BChannelWeight * b >> ChannelWeight);
+            luminances[luminanceIndex] = (byte)((luminance * alpha >> 8) + (255 * (255 - alpha) >> 8));
         }
     }
 

@@ -51,6 +51,7 @@ In your `AndroidManifest.xml` file (Platforms\Android) add the following permiss
 <uses-permission android:name="android.permission.CAMERA" />
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
 <uses-permission android:name="android.permission.RECORD_VIDEO" />
+<uses-permission android:name="android.permission.VIBRATE" />
 
 ```
 
@@ -76,7 +77,9 @@ For more information on permissions, see the [Microsoft Docs](https://docs.micro
 
 In XAML, make sure to add the right XML namespace:
 
-`xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`
+`xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`  
+`xmlns:bc="clr-namespace:Camera.MAUI.Plugin.ZXing;assembly=Camera.MAUI.Plugin.ZXing"`, or  
+`xmlns:bc="clr-namespace:Camera.MAUI.Plugin.MLKit;assembly=Camera.MAUI.Plugin.MLKit"`
 
 Use the control:
 ```xaml
@@ -86,8 +89,32 @@ Use the control:
 Configure the events:
 ```csharp
         cameraView.CamerasLoaded += CameraView_CamerasLoaded;
-        cameraView.BarcodeDetected += CameraView_BarcodeDetected;
 ```
+
+Configure plugin:
+```csharp
+        // ZXing
+        cameraView.PluginDecoder = new Camera.MAUI.Plugin.ZXing.ZXingDecoder();
+        cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
+```
+or
+```csharp
+        // MLKit
+        cameraView.PluginDecoder = new Camera.MAUI.Plugin.MLKit.MLKitBarcodeDecoder();
+        cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
+```
+
+Configure a collection of plugins:
+```csharp
+        var zxing = new Camera.MAUI.Plugin.ZXing.ZXingDecoder();
+        zxing.Decoded += CameraView_BarcodeDetected;
+
+        cameraView.PluginDecoders = new PluginDecoderCollection
+        {
+            zxing
+        };
+```
+
 Configure the camera and microphone to use:
 ```csharp
     private void CameraView_CamerasLoaded(object sender, EventArgs e)
@@ -219,37 +246,72 @@ The control has several binding properties for take an snapshot:
 ```
 ```xaml
 <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="200"
-  BarCodeOptions="{Binding BarCodeOptions}" 
-  BarCodeResults="{Binding BarCodeResults, Mode=OneWayToSource}"
-  Cameras="{Binding Cameras, Mode=OneWayToSource}" Camera="{Binding Camera}" 
-  AutoStartPreview="{Binding AutoStartPreview}" 
-  NumCamerasDetected="{Binding NumCameras, Mode=OneWayToSource}"
-  AutoSnapShotAsImageSource="True" AutoSnapShotFormat="PNG" 
-  TakeAutoSnapShot="{Binding TakeSnapshot}" AutoSnapShotSeconds="{Binding SnapshotSeconds}"
-  Microphones="{Binding Microphones, Mode=OneWayToSource}" Microphone="{Binding Microphone}"
-  NumMicrophonesDetected="{Binding NumMicrophones, Mode=OneWayToSource}"
-  AutoRecordingFile="{Binding RecordingFile}" 
-  AutoStartRecording="{Binding AutoStartRecording}"/>
-  ```
+               Cameras="{Binding Cameras, Mode=OneWayToSource}" Camera="{Binding Camera}"
+               AutoStartPreview="{Binding AutoStartPreview}"
+               NumCamerasDetected="{Binding NumCameras, Mode=OneWayToSource}"
+               AutoSnapShotAsImageSource="True" AutoSnapShotFormat="PNG" 
+               TakeAutoSnapShot="{Binding TakeSnapshot}" AutoSnapShotSeconds="{Binding SnapshotSeconds}"
+               Microphones="{Binding Microphones, Mode=OneWayToSource}" Microphone="{Binding Microphone}"
+               NumMicrophonesDetected="{Binding NumMicrophones, Mode=OneWayToSource}"
+               AutoRecordingFile="{Binding RecordingFile}" 
+               AutoStartRecording="{Binding AutoStartRecording}">
+    <cv:CameraView.PluginDecoder>
+        <bc:ZXingDecoder Options="{Binding BarCodeOptions}"
+                         Results="{Binding BarCodeResults, Mode=OneWayToSource}" />
+    </cv:CameraView.PluginDecoder>
+</cv:CameraView>
+```
+
+To bind ```CameraView.PluginDecoders``` instead of ```CameraView.PluginDecoder```
+```xaml
+<cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="200"
+               Cameras="{Binding Cameras, Mode=OneWayToSource}" Camera="{Binding Camera}"
+               AutoStartPreview="{Binding AutoStartPreview}"
+               NumCamerasDetected="{Binding NumCameras, Mode=OneWayToSource}"
+               AutoSnapShotAsImageSource="True" AutoSnapShotFormat="PNG" 
+               TakeAutoSnapShot="{Binding TakeSnapshot}" AutoSnapShotSeconds="{Binding SnapshotSeconds}"
+               Microphones="{Binding Microphones, Mode=OneWayToSource}" Microphone="{Binding Microphone}"
+               NumMicrophonesDetected="{Binding NumMicrophones, Mode=OneWayToSource}"
+               AutoRecordingFile="{Binding RecordingFile}" 
+               AutoStartRecording="{Binding AutoStartRecording}">
+    <cv:CameraView.PluginDecoder>
+        <plugin:PluginDecoderCollection xmlns:plugin="clr-namespace:Camera.MAUI.Plugin;assembly=Camera.MAUI.Plugin">
+            <bc:ZXingDecoder Options="{Binding BarCodeOptions}"
+                             Results="{Binding BarCodeResults, Mode=OneWayToSource}" />
+        </plugin:PluginDecoderCollection>
+    </cv:CameraView.PluginDecoder>
+</cv:CameraView>
+```
+
 
 You have a complete example of MVVM in [MVVM Example](https://github.com/hjam40/Camera.MAUI/tree/master/Camera.MAUI.Test/MVVM)
 
 
 Enable and Handle barcodes detection:
 ```csharp
-	cameraView.BarcodeDetected += CameraView_BarcodeDetected;
-    cameraView.BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
+    cameraView.PluginDecoder.Decoded += CameraView_BarcodeDetected;
+    if (cameraView.PluginDecoder is ZXingDecoder zxingDecoder)
     {
-        AutoRotate = true,
-        PossibleFormats = { ZXing.BarcodeFormat.QR_CODE },
-        ReadMultipleCodes = false,
-        TryHarder = true,
-        TryInverted = true
-    };
-	cameraView.BarCodeDetectionFrameRate = 10;
-    cameraView.BarCodeDetectionMaxThreads = 5;
-    cameraView.ControlBarcodeResultDuplicate = true;
-	cameraView.BarCodeDetectionEnabled = true;
+        zxingDecoder.Options = new ZXingDecoderOptions
+        {
+            AutoRotate = true,
+            PossibleFormats = { Plugin.BarcodeFormat.QR_CODE },
+            ReadMultipleCodes = false,
+            TryHarder = false,
+            TryInverted = true
+        };
+        zxingDecoder.ControlBarcodeResultDuplicate = true;
+    }
+    if (cameraView.PluginDecoder is MLKitBarcodeDecoder mlkitDecoder)
+    {
+        mlkitDecoder.Options = new MLKitBarcodeDecoderOptions
+        {
+            PossibleFormats = { Plugin.BarcodeFormat.QR_CODE },
+        };
+    }
+    cameraView.PluginProcessingFrameRate = 10;
+    cameraView.PluginProcessingMaxThreads = 5;
+    cameraView.PluginProcessingEnabled = true;
 
     private void CameraView_BarcodeDetected(object sender, ZXingHelper.BarcodeEventArgs args)
     {
@@ -258,10 +320,10 @@ Enable and Handle barcodes detection:
 ```
 Use the event or the bindable property BarCodeResults
 ```csharp
-    /// Event launched every time a code is detected in the image if "BarCodeDetectionEnabled" is set to true.
-    public event BarcodeResultHandler BarcodeDetected;
-    /// It refresh each time a barcode is detected if BarCodeDetectionEnabled porperty is true
-    public Result[] BarCodeResults
+    /// Event launched every time a successful decode occurs in the image if "Camera.MAUI.CameraView.PluginProcessingEnabled" is set to true.
+    public event PluginDecoderResultHandler Decoded;
+    /// It refresh each time a successful decode occurs, if "Camera.MAUI.CameraView.PluginProcessingEnabled" property is true.
+    public IPluginResult[] Results
 ```
 
 ## BarcodeImage
@@ -270,7 +332,10 @@ A ContentView control for generate codebars images.
 
 In XAML, make sure to add the right XML namespace:
 
-`xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"`
+```xaml
+xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"
+xmlns:bc="clr-namespace:Camera.MAUI.Plugin.ZXing;assembly=Camera.MAUI.Plugin.ZXing"
+```
 
 Use the control and its bindable properties:
 ```xaml
@@ -278,7 +343,11 @@ Use the control and its bindable properties:
                  WidthRequest="400" HeightRequest="400" 
                  BarcodeWidth="200" BarcodeHeight="200" BarcodeMargin="5"
                  BarcodeBackground="White" BarcodeForeground="Blue"
-                 BarcodeFormat="QR_CODE" />
+                 BarcodeFormat="QR_CODE">
+    <cv:BarcodeImage.BarcodeRenderer>
+        <bc:ZXingRenderer />
+    </cv:BarcodeImage.BarcodeRenderer>
+</cv:BarcodeImage
 ```
 Set the barcode property to generate the image:
 ```csharp

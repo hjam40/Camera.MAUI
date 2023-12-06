@@ -26,12 +26,11 @@
 		<RepositoryUrl>https://github.com/hjam40/Camera.MAUI</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>csharp; dotnet; cross-platform; camera; cameraview; codebar; qr; qr-decoder; codebar-encoder; codebar-decoder; camera-component; camera-view;  plugin; maui; dotnet-maui;</PackageTags>
-		<Authors>hjam40</Authors>
+		<Authors>hjam40,programatix</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<Version>1.4.4</Version>
-		<PackageReleaseNotes>Fix problems with Android rotate device.  Fix iOS problems.
-</PackageReleaseNotes>
+		<PackageReleaseNotes>Fix problems with Android rotate device.  Fix iOS problems.</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)'=='net7.0-ios'">
@@ -39,12 +38,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Folder Include="Platforms\iOS\" />
-	  <Folder Include="Platforms\MacCatalyst\" />
-	  <Folder Include="Platforms\Tizen\" />
+		<ProjectReference Include="..\Camera.MAUI.Plugin\Camera.MAUI.Plugin.csproj" />
 	</ItemGroup>
-
-	<ItemGroup Condition="'$(TargetFramework)' == 'net7.0-android'">
+	
+	<!-- Both iOS and Mac Catalyst -->
+	<ItemGroup Condition="$(TargetFramework.StartsWith('net7.0-ios')) != true AND $(TargetFramework.StartsWith('net7.0-maccatalyst')) != true">
+		<Compile Remove="**\MaciOS\**\*.cs" />
+		<None Include="**\MaciOS\**\*.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -57,16 +57,6 @@
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <PackageReference Include="ZXing.Net" Version="0.16.9" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <MauiXaml Update="BarcodeImage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
 	</ItemGroup>
 
 </Project>

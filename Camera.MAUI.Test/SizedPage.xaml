@@ -4,36 +4,41 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Camera.MAUI.Test.SizedPage"
              xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"
+             xmlns:bc="clr-namespace:Camera.MAUI.Plugin.ZXing;assembly=Camera.MAUI.Plugin.ZXing"
              Title="SizedPage" Background="white" x:Name="sizedPage">
     <ScrollView>
         <Grid>
             <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-                <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="300" />
+                <cv:CameraView x:Name="cameraView" WidthRequest="300" HeightRequest="300">
+                    <cv:CameraView.PluginDecoder>
+                        <bc:ZXingDecoder />
+                    </cv:CameraView.PluginDecoder>
+                </cv:CameraView>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
-                    <Label x:Name="cameraLabel" Text="Select a camera:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black"/>
-                    <Picker x:Name="cameraPicker" VerticalOptions="Center" TextColor="Black" SelectedIndexChanged="CameraPicker_SelectedIndexChanged"/>
+                    <Label x:Name="cameraLabel" Text="Select a camera:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black" />
+                    <Picker x:Name="cameraPicker" VerticalOptions="Center" TextColor="Black" SelectedIndexChanged="CameraPicker_SelectedIndexChanged" />
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
-                    <Label x:Name="microLabel" Text="Select a microphone:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black"/>
-                    <Picker x:Name="microPicker" VerticalOptions="Center" TextColor="Black" SelectedIndexChanged="MicroPicker_SelectedIndexChanged"/>
+                    <Label x:Name="microLabel" Text="Select a microphone:" VerticalOptions="Center" BackgroundColor="White" TextColor="Black" />
+                    <Picker x:Name="microPicker" VerticalOptions="Center" TextColor="Black" SelectedIndexChanged="MicroPicker_SelectedIndexChanged" />
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center">
-                    <Label Text="Mirrored" VerticalOptions="Center" TextColor="Black"/>
-                    <CheckBox CheckedChanged="CheckBox_CheckedChanged" VerticalOptions="Center" Color="Black"/>
-                    <Label x:Name="torchLabel" Text="Torch" VerticalOptions="Center" TextColor="Black"/>
-                    <CheckBox x:Name="torchCheck" CheckedChanged="CheckBox4_CheckedChanged" VerticalOptions="Center" Color="Black"/>
-                    <Label Text="QR Detec." VerticalOptions="Center" TextColor="Black"/>
-                    <CheckBox CheckedChanged="CheckBox3_CheckedChanged" VerticalOptions="Center" Color="Black"/>
+                    <Label Text="Mirrored" VerticalOptions="Center" TextColor="Black" />
+                    <CheckBox CheckedChanged="CheckBox_CheckedChanged" VerticalOptions="Center" Color="Black" />
+                    <Label x:Name="torchLabel" Text="Torch" VerticalOptions="Center" TextColor="Black" />
+                    <CheckBox x:Name="torchCheck" CheckedChanged="CheckBox4_CheckedChanged" VerticalOptions="Center" Color="Black" />
+                    <Label Text="QR Detec." VerticalOptions="Center" TextColor="Black" />
+                    <CheckBox CheckedChanged="CheckBox3_CheckedChanged" VerticalOptions="Center" Color="Black" />
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center">
-                    <Label Text="Flash" VerticalOptions="Center" TextColor="Black"/>
-                    <CheckBox CheckedChanged="CheckBox_CheckedChanged_1" VerticalOptions="Center" Color="Black"/>
-                    <Label Text="As ISource" VerticalOptions="Center" TextColor="Black"/>
-                    <CheckBox BindingContext="{x:Reference cameraView}" IsChecked="{Binding AutoSnapShotAsImageSource}" VerticalOptions="Center" Color="Black"/>
+                    <Label Text="Flash" VerticalOptions="Center" TextColor="Black" />
+                    <CheckBox CheckedChanged="CheckBox_CheckedChanged_1" VerticalOptions="Center" Color="Black" />
+                    <Label Text="As ISource" VerticalOptions="Center" TextColor="Black" />
+                    <CheckBox BindingContext="{x:Reference cameraView}" IsChecked="{Binding AutoSnapShotAsImageSource}" VerticalOptions="Center" Color="Black" />
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="2" Spacing="2">
-                    <Label x:Name="zoomLabel" Text="Zoom" VerticalOptions="Center" TextColor="Black"/>
-                    <Stepper x:Name="zoomStepper" BindingContext="{x:Reference cameraView}" Minimum="{Binding MinZoomFactor}" Maximum="1.1" Increment="0.5" Value="1" ValueChanged="Stepper_ValueChanged"/>
+                    <Label x:Name="zoomLabel" Text="Zoom" VerticalOptions="Center" TextColor="Black" />
+                    <Stepper x:Name="zoomStepper" BindingContext="{x:Reference cameraView}" Minimum="{Binding MinZoomFactor}" Maximum="1.1" Increment="0.5" Value="1" ValueChanged="Stepper_ValueChanged" />
                     <Button Text="Focus" Clicked="Button_Clicked_1" />
                 </HorizontalStackLayout>
                 <HorizontalStackLayout HorizontalOptions="Center" Margin="5">
@@ -49,7 +54,7 @@
                     <Button Text="Stop Record" Clicked="OnStopRecordingClicked" />
                 </HorizontalStackLayout>
                 <Label BindingContext="{x:Reference sizedPage}" Text="{Binding BarcodeText}" TextColor="Black" FontAttributes="Bold" HorizontalOptions="Fill" HorizontalTextAlignment="Center" />
-                <Image x:Name="snapPreview" BindingContext="{x:Reference cameraView}" Aspect="AspectFit" Source="dotnet_bot.png" WidthRequest="300" HeightRequest="200" HorizontalOptions="Center"/>
+                <Image x:Name="snapPreview" BindingContext="{x:Reference cameraView}" Aspect="AspectFit" Source="dotnet_bot.png" WidthRequest="300" HeightRequest="200" HorizontalOptions="Center" />
                 <toolkit:MediaElement x:Name="player" ShouldAutoPlay="False" ShouldShowPlaybackControls="True" HeightRequest="300" WidthRequest="200" />
             </VerticalStackLayout>
         </Grid>

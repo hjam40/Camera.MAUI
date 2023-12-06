@@ -1,10 +1,9 @@
 ﻿using Android.Graphics;
-using ZXing;
 using ZXing.Common;
 using ZXing.Rendering;
 using Color = Android.Graphics.Color;
 
-namespace Camera.MAUI.Platforms.Android;
+namespace Camera.MAUI.Plugin.ZXing.Platforms.Android;
 
 public class BitmapRenderer : IBarcodeRenderer<Bitmap>
 {
@@ -18,12 +17,12 @@ public class BitmapRenderer : IBarcodeRenderer<Bitmap>
         Background = Color.White;
     }
 
-    public Bitmap Render(BitMatrix matrix, BarcodeFormat format, string content)
+    public Bitmap Render(BitMatrix matrix, global::ZXing.BarcodeFormat format, string content)
     {
         return Render(matrix, format, content, new EncodingOptions());
     }
 
-    public Bitmap Render(BitMatrix matrix, BarcodeFormat format, string content, EncodingOptions options)
+    public Bitmap Render(BitMatrix matrix, global::ZXing.BarcodeFormat format, string content, EncodingOptions options)
     {
         var width = matrix.Width;
         var height = matrix.Height;
