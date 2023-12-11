@@ -93,6 +93,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         HasFlashUnit = device.FlashAvailable,
                         MinZoomFactor = (float)device.MinAvailableVideoZoomFactor,
                         MaxZoomFactor = (float)device.MaxAvailableVideoZoomFactor,
+                        HorizontalViewAngle = device.ActiveFormat.VideoFieldOfView * MathF.PI / 180,
                         AvailableResolutions = new() { new(1920, 1080), new(1280, 720), new(640, 480), new(352, 288) }
                     });
                 }
