@@ -157,9 +157,9 @@ bool result = cameraView.SaveSnapShot(ImageFormat.PNG, filePath);
 ```
 Record a video:
 ```csharp
-var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4", new Size(1920, 1080)));
+var result = await cameraView.StartRecordingAsync(Path.Combine(FileSystem.Current.CacheDirectory, "Video.mp4"), new Size(1920, 1080));
 ....
-result = cameraView.StopRecordingAsync();
+result = await cameraView.StopRecordingAsync();
 ```
 Take a photo
 ```csharp
@@ -237,7 +237,7 @@ You have a complete example of MVVM in [MVVM Example](https://github.com/hjam40/
 
 Enable and Handle barcodes detection:
 ```csharp
-	cameraView.BarcodeDetected += CameraView_BarcodeDetected;
+    cameraView.BarcodeDetected += CameraView_BarcodeDetected;
     cameraView.BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
     {
         AutoRotate = true,
