@@ -796,6 +796,7 @@ internal class MauiCameraView: GridLayout
         }
         return swappedDimensions;
     }
+
     private int GetJpegOrientation()
     {
         IWindowManager windowManager = context.GetSystemService(Context.WindowService).JavaCast<IWindowManager>();
@@ -804,22 +805,14 @@ internal class MauiCameraView: GridLayout
         int sensorOrientation = (int)(chars.Get(CameraCharacteristics.SensorOrientation) as Java.Lang.Integer);
         int deviceOrientation = displayRotation switch
         {
-            SurfaceOrientation.Rotation90 => 0,
-            SurfaceOrientation.Rotation180 => 270,
-            SurfaceOrientation.Rotation270 => 180,
-            _ => 90
+            SurfaceOrientation.Rotation90 => 90,
+            SurfaceOrientation.Rotation180 => 180,
+            SurfaceOrientation.Rotation270 => 270,
+            _ => 0
         };
-        // Round device orientation to a multiple of 90
-        //deviceOrientation = (deviceOrientation + 45) / 90 * 90;
 
-        // Reverse device orientation for front-facing cameras
-        //if (cameraView.Camera.Position == CameraPosition.Front) deviceOrientation = -deviceOrientation;
-
-        // Calculate desired JPEG orientation relative to camera orientation to make
-        // the image upright relative to the device orientation
-        int jpegOrientation = (sensorOrientation + deviceOrientation + 270) % 360;
-
-        return jpegOrientation;
+        var cameraPosition = cameraView.Camera.Position == CameraPosition.Front ? -1 : 1;
+        return (sensorOrientation - deviceOrientation * cameraPosition + 360) % 360;
     }
     private class MyCameraStateCallback : CameraDevice.StateCallback
     {
