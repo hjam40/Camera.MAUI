@@ -7,5 +7,6 @@
     <Grid HorizontalOptions="Fill" VerticalOptions="Fill">
         <cv:CameraView x:Name="cameraView" HorizontalOptions="Fill" VerticalOptions="Fill"/>
         <Button x:Name="controlButton" Text="Play" TextColor="DarkGray" VerticalOptions="End" HorizontalOptions="Center" Clicked="Button_Clicked" Margin="15" Background="#66666666"/>
+        <Label x:Name="barCodeText" Background="White" TextColor="Black" FontSize="Large" VerticalOptions="Center" HorizontalOptions="Center" IsVisible="false" />
     </Grid>
 </ContentPage>

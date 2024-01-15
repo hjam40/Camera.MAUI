@@ -1,9 +1,6 @@
 ﻿using Camera.MAUI.ZXingHelper;
-using Microsoft.Maui.Controls;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using ZXing;
-using static Microsoft.Maui.ApplicationModel.Permissions;
+
 #if IOS || MACCATALYST
 using DecodeDataType = UIKit.UIImage;
 #elif ANDROID
@@ -28,10 +25,11 @@ public class CameraView : View, ICameraView
     public static readonly BindableProperty NumMicrophonesDetectedProperty = BindableProperty.Create(nameof(NumMicrophonesDetected), typeof(int), typeof(CameraView), 0);
     public static readonly BindableProperty MicrophoneProperty = BindableProperty.Create(nameof(Microphone), typeof(MicrophoneInfo), typeof(CameraView), null);
     public static readonly BindableProperty MirroredImageProperty = BindableProperty.Create(nameof(MirroredImage), typeof(bool), typeof(CameraView), false);
+    public static readonly BindableProperty BarCodeDecoderProperty = BindableProperty.Create(nameof(BarCodeDecoder), typeof(IBarcodeDecoder), typeof(CameraView), null);
     public static readonly BindableProperty BarCodeDetectionEnabledProperty = BindableProperty.Create(nameof(BarCodeDetectionEnabled), typeof(bool), typeof(CameraView), false);
     public static readonly BindableProperty BarCodeDetectionFrameRateProperty = BindableProperty.Create(nameof(BarCodeDetectionFrameRate), typeof(int), typeof(CameraView), 10);
     public static readonly BindableProperty BarCodeOptionsProperty = BindableProperty.Create(nameof(BarCodeOptions), typeof(BarcodeDecodeOptions), typeof(CameraView), new BarcodeDecodeOptions(), propertyChanged:BarCodeOptionsChanged);
-    public static readonly BindableProperty BarCodeResultsProperty = BindableProperty.Create(nameof(BarCodeResults), typeof(Result[]), typeof(CameraView), null, BindingMode.OneWayToSource);
+    public static readonly BindableProperty BarCodeResultsProperty = BindableProperty.Create(nameof(BarCodeResults), typeof(BarcodeResult[]), typeof(CameraView), null, BindingMode.OneWayToSource);
     public static readonly BindableProperty ZoomFactorProperty = BindableProperty.Create(nameof(ZoomFactor), typeof(float), typeof(CameraView), 1f);
     public static readonly BindableProperty AutoSnapShotSecondsProperty = BindableProperty.Create(nameof(AutoSnapShotSeconds), typeof(float), typeof(CameraView), 0f);
     public static readonly BindableProperty AutoSnapShotFormatProperty = BindableProperty.Create(nameof(AutoSnapShotFormat), typeof(ImageFormat), typeof(CameraView), ImageFormat.PNG);
@@ -124,7 +122,15 @@ public class CameraView : View, ICameraView
         set { SetValue(MirroredImageProperty, value); }
     }
     /// <summary>
-    /// Turns on and off the barcode detection. This is a bindable property.
+    /// Set the barcode Decoder to be used.
+    /// </summary>
+    public IBarcodeDecoder BarCodeDecoder
+    {
+        get { return (IBarcodeDecoder)GetValue(BarCodeDecoderProperty); }
+        set { SetValue(BarCodeDecoderProperty, value); }
+    }
+    /// <summary>
+    /// Turns on and off the barcode detection, BarCodeDecoder must be set. This is a bindable property.
     /// </summary>
     public bool BarCodeDetectionEnabled
     {
@@ -154,11 +160,11 @@ public class CameraView : View, ICameraView
         set { SetValue(BarCodeOptionsProperty, value); }
     }
     /// <summary>
-    /// It refresh each time a barcode is detected if BarCodeDetectionEnabled porperty is true
+    /// It refresh each time a barcode is detected if BarCodeDetectionEnabled porperty is true and BarCodeDecoder is set
     /// </summary>
-    public Result[] BarCodeResults
+    public BarcodeResult[] BarCodeResults
     {
-        get { return (Result[])GetValue(BarCodeResultsProperty); }
+        get { return (BarcodeResult[])GetValue(BarCodeResultsProperty); }
         set { SetValue(BarCodeResultsProperty, value); }
     }
     /// <summary>
@@ -293,13 +299,11 @@ public class CameraView : View, ICameraView
     /// </summary>
     public static CameraView Current { get; set; }
 
-    private readonly BarcodeReaderGeneric BarcodeReader;
     internal DateTime lastSnapshot = DateTime.Now;
     internal Size PhotosResolution = new(0, 0);
 
     public CameraView()
     {
-        BarcodeReader = new BarcodeReaderGeneric();
         HandlerChanged += CameraView_HandlerChanged;
         Current = this;
     }
@@ -325,28 +329,9 @@ public class CameraView : View, ICameraView
 
     internal void DecodeBarcode(DecodeDataType data)
     {
-        System.Diagnostics.Debug.WriteLine("Calculate Luminance " + DateTime.Now.ToString("mm:ss:fff"));
-
-        LuminanceSource lumSource = default;
-#if ANDROID
-        lumSource = new Camera.MAUI.Platforms.Android.BitmapLuminanceSource(data);
-#elif IOS || MACCATALYST
-        lumSource = new Camera.MAUI.ZXingHelper.RGBLuminanceSource(data);
-#elif WINDOWS
-        lumSource = new Camera.MAUI.Platforms.Windows.SoftwareBitmapLuminanceSource(data);
-#endif
-        System.Diagnostics.Debug.WriteLine("End Calculate Luminance " + DateTime.Now.ToString("mm:ss:fff"));
-
-        try
+        if (BarCodeDecoder != null)
         {
-            Result[] results = null;
-            if (BarCodeOptions.ReadMultipleCodes)
-                results = BarcodeReader.DecodeMultiple(lumSource);
-            else
-            {
-                var result = BarcodeReader.Decode(lumSource);
-                if (result != null) results = new Result[] { result };
-            }
+            var results = BarCodeDecoder.Decode(data);
             if (results?.Length > 0)
             {
                 bool refresh = true;
@@ -369,7 +354,6 @@ public class CameraView : View, ICameraView
                 }
             }
         }
-        catch {}
     }
     private static void CameraChanged(BindableObject bindable, object oldValue, object newValue)
     {
@@ -422,14 +406,7 @@ public class CameraView : View, ICameraView
     private static void BarCodeOptionsChanged(BindableObject bindable, object oldValue, object newValue)
     {
         if (newValue != null && oldValue != newValue && bindable is CameraView cameraView && newValue is BarcodeDecodeOptions options)
-        {
-            cameraView.BarcodeReader.AutoRotate = options.AutoRotate;
-            if (options.CharacterSet != string.Empty) cameraView.BarcodeReader.Options.CharacterSet = options.CharacterSet;
-            cameraView.BarcodeReader.Options.PossibleFormats = options.PossibleFormats;
-            cameraView.BarcodeReader.Options.TryHarder = options.TryHarder;
-            cameraView.BarcodeReader.Options.TryInverted = options.TryInverted;
-            cameraView.BarcodeReader.Options.PureBarcode = options.PureBarcode;
-        }
+            cameraView.BarCodeDecoder?.SetDecodeOptions(options);
     }
     /// <summary>
     /// Start playback of the selected camera async. "Camera" property must not be null.

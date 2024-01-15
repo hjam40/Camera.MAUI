@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>net7.0;net7.0-android;net7.0-ios;net7.0-maccatalyst</TargetFrameworks>
@@ -10,33 +10,34 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">26.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
-		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</SupportedOSPlatformVersion>
+		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
-		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Title>Camera pluging for .NET MAUI Apps</Title>
-		<Description>A Camera View control for .NET MAUI applications.</Description>
-		<Copyright></Copyright>
+		<Title>Barcode encode/decode pluging for use with Camera.MAUI</Title>
+		<Version>1.0.0</Version>
+		<Authors>hjam40</Authors>
+		<Description>A Barcode Endode/Decode control (based on ZXing.Net) for use with Camera.MAUI in  .NET MAUI applications.</Description>
 		<PackageProjectUrl>https://github.com/hjam40/Camera.MAUI</PackageProjectUrl>
-		<PackageIcon>camera.maui.png</PackageIcon>
 		<PackageReadmeFile>Readme.md</PackageReadmeFile>
+		<PackageIcon>camera.maui.png</PackageIcon>
 		<RepositoryUrl>https://github.com/hjam40/Camera.MAUI</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>csharp; dotnet; cross-platform; camera; cameraview; codebar; qr; qr-decoder; codebar-encoder; codebar-decoder; camera-component; camera-view;  plugin; maui; dotnet-maui;</PackageTags>
-		<Authors>hjam40</Authors>
+		<PackageReleaseNotes>First version</PackageReleaseNotes>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<Version>1.5</Version>
-		<PackageReleaseNotes>Split barcode encoder/decoder in a different package. Fix some bugs
-</PackageReleaseNotes>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(TargetFramework)'=='net7.0-ios'">
-	  <ProvisioningType>manual</ProvisioningType>
-	</PropertyGroup>
+	<ItemGroup>
+	  <PackageReference Include="ZXing.Net" Version="0.16.9" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Camera.MAUI\Camera.MAUI.csproj" />
+	</ItemGroup>
 
 	<ItemGroup>
 	  <Folder Include="Platforms\iOS\" />
@@ -44,25 +45,15 @@
 	  <Folder Include="Platforms\Tizen\" />
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(TargetFramework)' == 'net7.0-android'">
-	</ItemGroup>
-
 	<ItemGroup>
-	  <None Include="camera.maui.png">
+	  <None Include="..\Camera.MAUI\camera.maui.png">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
-	  <None Include="..\.editorconfig" Link=".editorconfig" />
 	  <None Include="..\Readme.md">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <MauiXaml Update="BarcodeImage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
 	</ItemGroup>
 
 </Project>

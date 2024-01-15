@@ -207,7 +207,7 @@ internal class MauiCameraView: GridLayout
 
     private void StartPreview()
     {
-        while (textureView.SurfaceTexture == null) Thread.Sleep(100);
+        while (textureView.SurfaceTexture == null || !textureView.IsAvailable) Thread.Sleep(100);
         SurfaceTexture texture = textureView.SurfaceTexture;
         texture.SetDefaultBufferSize(videoSize.Width, videoSize.Height);
 
@@ -344,6 +344,7 @@ internal class MauiCameraView: GridLayout
             try
             {
                 previewSession?.StopRepeating();
+                previewSession?.AbortCaptures();
                 previewSession?.Dispose();
             } catch { }
             try

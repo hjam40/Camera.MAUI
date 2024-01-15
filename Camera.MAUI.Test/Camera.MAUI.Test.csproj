@@ -59,6 +59,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\Camera.MAUI.MLKit\Camera.MAUI.MLKit.csproj" />
+	  <ProjectReference Include="..\Camera.MAUI.ZXing\Camera.MAUI.ZXing.csproj" />
 	  <ProjectReference Include="..\Camera.MAUI\Camera.MAUI.csproj" />
 	</ItemGroup>
 

@@ -1,9 +1,8 @@
-using ZXing;
-
 namespace Camera.MAUI;
 
 public partial class BarcodeImage : ContentView
 {
+    public static readonly BindableProperty BarcodeEncoderProperty = BindableProperty.Create(nameof(BarcodeEncoder), typeof(IBarcodeEncoder), typeof(BarcodeImage), null);
     public static readonly BindableProperty BarcodeForegroundProperty = BindableProperty.Create(nameof(BarcodeForeground), typeof(Color), typeof(BarcodeImage), Colors.Black, propertyChanged:RefreshRender);
     public static readonly BindableProperty BarcodeBackgroundProperty = BindableProperty.Create(nameof(BarcodeBackground), typeof(Color), typeof(BarcodeImage), Colors.White, propertyChanged: RefreshRender);
     public static readonly BindableProperty BarcodeWidthProperty = BindableProperty.Create(nameof(BarcodeWidth), typeof(int), typeof(BarcodeImage), 200, propertyChanged: RefreshRender);
@@ -14,8 +13,15 @@ public partial class BarcodeImage : ContentView
     public static readonly BindableProperty AspectProperty = BindableProperty.Create(nameof(Aspect), typeof(Aspect), typeof(BarcodeImage), Aspect.AspectFit);
 
     /// <summary>
-    /// Foreground color for Codebar generation. This is a bindable property.
+    /// Set the encoder for create the image.
     /// </summary>
+    public IBarcodeEncoder BarcodeEncoder
+    {
+        get { return (IBarcodeEncoder)GetValue(BarcodeEncoderProperty); }
+        set { SetValue(BarcodeEncoderProperty, value); }
+    }    /// <summary>
+         /// Foreground color for Codebar generation. This is a bindable property.
+         /// </summary>
     public Color BarcodeForeground
     {
         get { return (Color)GetValue(BarcodeForegroundProperty); }
@@ -77,7 +83,6 @@ public partial class BarcodeImage : ContentView
         get { return (Aspect)GetValue(AspectProperty); }
         set { SetValue(AspectProperty, value); }
     }
-    private BarcodeRenderer barcodeRenderer = new BarcodeRenderer();
 
     public BarcodeImage()
 	{
@@ -85,13 +90,13 @@ public partial class BarcodeImage : ContentView
 	}
     private static void RefreshRender(BindableObject bindable, object oldValue, object newValue)
     {
-        if (oldValue != newValue && bindable is BarcodeImage barcodeImage)
+        if (oldValue != newValue && bindable is BarcodeImage barcodeImage && barcodeImage.BarcodeEncoder != null)
         {
-            barcodeImage.barcodeRenderer.Foreground = barcodeImage.BarcodeForeground;
-            barcodeImage.barcodeRenderer.Background = barcodeImage.BarcodeBackground;
             if (!string.IsNullOrEmpty(barcodeImage.Barcode) && barcodeImage.BarcodeWidth > 0 && barcodeImage.BarcodeHeight > 0)
             {
-                var imageSource = barcodeImage.barcodeRenderer.EncodeBarcode(barcodeImage.Barcode, barcodeImage.BarcodeFormat, barcodeImage.BarcodeWidth, barcodeImage.BarcodeHeight, barcodeImage.BarcodeMargin);
+                var imageSourceStream = barcodeImage.BarcodeEncoder.EncodeBarcode(barcodeImage.Barcode, barcodeImage.BarcodeFormat, barcodeImage.BarcodeWidth, 
+                                            barcodeImage.BarcodeHeight, barcodeImage.BarcodeMargin, barcodeImage.BarcodeForeground, barcodeImage.BarcodeBackground);
+                ImageSource imageSource = ImageSource.FromStream(() => imageSourceStream);
                 if (imageSource != null) barcodeImage.image.Source = imageSource;
             }
         }

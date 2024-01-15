@@ -2,7 +2,7 @@
 using Windows.Graphics.Imaging;
 using ZXing;
 
-namespace Camera.MAUI.Platforms.Windows;
+namespace Camera.MAUI.ZXing;
 
 internal class SoftwareBitmapLuminanceSource : BaseLuminanceSource
 {

@@ -1,7 +1,7 @@
+//using Camera.MAUI.MLKit;
+using Camera.MAUI.ZXing;
 using CommunityToolkit.Maui.Views;
 using System.Diagnostics;
-using ZXing;
-using ZXing.QrCode.Internal;
 
 namespace Camera.MAUI.Test;
 
@@ -30,10 +30,12 @@ public partial class SizedPage : ContentPage
         cameraView.CamerasLoaded += CameraView_CamerasLoaded;
         cameraView.MicrophonesLoaded += CameraView_MicrophonesLoaded;
         cameraView.BarcodeDetected += CameraView_BarcodeDetected;
-        cameraView.BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
+        cameraView.BarCodeDecoder = new ZXingBarcodeDecoder();
+        //cameraView.BarCodeDecoder = new MLKitBarcodeDecoder();
+        cameraView.BarCodeOptions = new BarcodeDecodeOptions
         {
             AutoRotate = true,
-            PossibleFormats = { BarcodeFormat.EAN_13 },
+            PossibleFormats = { BarcodeFormat.QR_CODE },
             ReadMultipleCodes = false,
             TryHarder = false,
             TryInverted = true

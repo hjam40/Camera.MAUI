@@ -9,7 +9,7 @@ using ZXing.Rendering;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Color = Windows.UI.Color;
 
-namespace Camera.MAUI.Platforms.Windows
+namespace Camera.MAUI.ZXing.Platforms.Windows
 {
     public class SoftwareBitmapRenderer : IBarcodeRenderer<SoftwareBitmap>
     {
@@ -22,25 +22,25 @@ namespace Camera.MAUI.Platforms.Windows
             Background = Color.FromArgb(1, 255, 255, 255);
         }
 
-        public SoftwareBitmap Render(BitMatrix matrix, BarcodeFormat format, string content)
+        public SoftwareBitmap Render(BitMatrix matrix, global::ZXing.BarcodeFormat format, string content)
         {
             return Render(matrix, format, content, null);
         }
 
-        public virtual SoftwareBitmap Render(BitMatrix matrix, BarcodeFormat format, string content, EncodingOptions options)
+        public virtual SoftwareBitmap Render(BitMatrix matrix, global::ZXing.BarcodeFormat format, string content, EncodingOptions options)
         {
             int width = matrix.Width;
             int height = matrix.Height;
             bool outputContent = (options == null || !options.PureBarcode) &&
-                                 !String.IsNullOrEmpty(content) && (format == BarcodeFormat.CODE_39 ||
-                                                                    format == BarcodeFormat.CODE_128 ||
-                                                                    format == BarcodeFormat.EAN_13 ||
-                                                                    format == BarcodeFormat.EAN_8 ||
-                                                                    format == BarcodeFormat.CODABAR ||
-                                                                    format == BarcodeFormat.ITF ||
-                                                                    format == BarcodeFormat.UPC_A ||
-                                                                    format == BarcodeFormat.MSI ||
-                                                                    format == BarcodeFormat.PLESSEY);
+                                 !String.IsNullOrEmpty(content) && (format == global::ZXing.BarcodeFormat.CODE_39 ||
+                                                                    format == global::ZXing.BarcodeFormat.CODE_128 ||
+                                                                    format == global::ZXing.BarcodeFormat.EAN_13 ||
+                                                                    format == global::ZXing.BarcodeFormat.EAN_8 ||
+                                                                    format == global::ZXing.BarcodeFormat.CODABAR ||
+                                                                    format == global::ZXing.BarcodeFormat.ITF ||
+                                                                    format == global::ZXing.BarcodeFormat.UPC_A ||
+                                                                    format == global::ZXing.BarcodeFormat.MSI ||
+                                                                    format == global::ZXing.BarcodeFormat.PLESSEY);
             int emptyArea = outputContent ? 16 : 0;
             int pixelsize = 1;
 

@@ -1,3 +1,5 @@
+using Camera.MAUI.ZXing;
+
 namespace Camera.MAUI.Test;
 
 public partial class FullScreenPage : ContentPage
@@ -7,7 +9,26 @@ public partial class FullScreenPage : ContentPage
 	{
 		InitializeComponent();
         cameraView.CamerasLoaded += CameraView_CamerasLoaded;
+        cameraView.BarcodeDetected += CameraView_BarcodeDetected;
+        cameraView.BarCodeDecoder = (IBarcodeDecoder)new ZXingBarcodeDecoder();
+        cameraView.BarCodeOptions = new BarcodeDecodeOptions
+        {
+            AutoRotate = true,
+            PossibleFormats = { BarcodeFormat.QR_CODE },
+            ReadMultipleCodes = false,
+            TryHarder = false,
+            TryInverted = true
+        };
+        cameraView.BarCodeDetectionEnabled = true;
     }
+
+    private void CameraView_BarcodeDetected(object sender, ZXingHelper.BarcodeEventArgs args)
+    {
+        barCodeText.Text = args.Result[0].Text;
+        barCodeText.IsVisible = true;
+        System.Diagnostics.Debug.WriteLine("QR Detected:  " + args.Result[0].Text);
+    }
+
     private void CameraView_CamerasLoaded(object sender, EventArgs e)
     {
         if (cameraView.Cameras.Count > 0)
@@ -31,12 +52,14 @@ public partial class FullScreenPage : ContentPage
         if (playing)
         {
             var result = await cameraView.StopCameraAsync();
-            controlButton.Text = "Play";
+            if (result == CameraResult.Success)
+                controlButton.Text = "Play";
         }
         else
         {
             var result = await cameraView.StartCameraAsync();
-            controlButton.Text = "Stop";
+            if (result == CameraResult.Success)
+                controlButton.Text = "Stop";
         }
         playing = !playing;
     }

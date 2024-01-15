@@ -1,7 +1,7 @@
 ﻿using Android.Graphics;
 using ZXing;
 
-namespace Camera.MAUI.Platforms.Android;
+namespace Camera.MAUI.ZXing;
 
 public class BitmapLuminanceSource : RGBLuminanceSource
 {

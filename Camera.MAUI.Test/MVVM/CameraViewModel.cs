@@ -10,6 +10,7 @@ using System.Windows.Markup;
 using System.Collections.Specialized;
 using Camera.MAUI.ZXingHelper;
 using CommunityToolkit.Maui.Views;
+using Camera.MAUI.ZXing;
 
 namespace Camera.MAUI.Test;
 
@@ -65,6 +66,16 @@ public class CameraViewModel : INotifyPropertyChanged
         {
             micros = value;
             OnPropertyChanged(nameof(Microphones));
+        }
+    }
+    private IBarcodeDecoder barcodeDecoder;
+    public IBarcodeDecoder BarcodeDecoder
+    {
+        get => barcodeDecoder;
+        set
+        {
+            barcodeDecoder = value;
+            OnPropertyChanged(nameof(BarcodeDecoder));
         }
     }
     public int NumMicrophones
@@ -132,10 +143,11 @@ public class CameraViewModel : INotifyPropertyChanged
     }
     public CameraViewModel()
     {
-        BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
+        BarcodeDecoder = (IBarcodeDecoder)(new ZXingBarcodeDecoder());
+        BarCodeOptions = new BarcodeDecodeOptions
         {
             AutoRotate = true,
-            PossibleFormats = { ZXing.BarcodeFormat.QR_CODE },
+            PossibleFormats = { BarcodeFormat.QR_CODE },
             ReadMultipleCodes = false,
             TryHarder = true,
             TryInverted = true

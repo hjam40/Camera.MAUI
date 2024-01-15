@@ -3,9 +3,8 @@ using CoreGraphics;
 using UIKit;
 using ZXing.Common;
 using ZXing.Rendering;
-using ZXing;
 
-namespace Camera.MAUI.Platforms.Apple;
+namespace Camera.MAUI.ZXing.Platforms.Apple;
 
 public class BitmapRenderer : IBarcodeRenderer<UIImage>
 {
@@ -17,12 +16,12 @@ public class BitmapRenderer : IBarcodeRenderer<UIImage>
         Foreground = new CGColor(0f, 0f, 0f);
         Background = new CGColor(1.0f, 1.0f, 1.0f);
     }
-    public UIImage Render(BitMatrix matrix, BarcodeFormat format, string content)
+    public UIImage Render(BitMatrix matrix, global::ZXing.BarcodeFormat format, string content)
     {
         return Render(matrix, format, content, new EncodingOptions());
     }
 
-    public UIImage Render(BitMatrix matrix, BarcodeFormat format, string content, EncodingOptions options)
+    public UIImage Render(BitMatrix matrix, global::ZXing.BarcodeFormat format, string content, EncodingOptions options)
     {
         UIGraphics.BeginImageContext(new CGSize(matrix.Width, matrix.Height));
         var context = UIGraphics.GetCurrentContext();
