@@ -149,7 +149,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
                         var movieFileOutputConnection = recordOutput.Connections[0];
                         movieFileOutputConnection.VideoOrientation = (AVCaptureVideoOrientation)UIDevice.CurrentDevice.Orientation;
                         captureSession.StartRunning();
-                        if (!File.Exists(file)) File.Create(file).Close();
+                        if (File.Exists(file)) File.Delete(file);
                         
                         recordOutput.StartRecordingToOutputFile(NSUrl.FromFilename(file), this);
                         UpdateMirroredImage();

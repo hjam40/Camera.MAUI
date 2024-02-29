@@ -1,5 +1,5 @@
 
-# Camera.MAUI
+# Camera.MAUI/Camera.MAUI.ZXing
 
 A Camera View control and a Barcode Endode/Decode control (based on ZXing.Net) for .NET MAUI applications.
 
@@ -23,6 +23,7 @@ A ContetView control for camera management with the next properties:
 ### Install and configure CameraView
 
 1. Download and Install [Camera.MAUI](https://www.nuget.org/packages/Camera.MAUI) NuGet package on your application.
+1. Download and Install [Camera.MAUI.ZXing](https://www.nuget.org/packages/Camera.MAUI.ZXing) NuGet package on your application (if you want Barcode detection/decode with ZXing).
 
 1. Initialize the plugin in your `MauiProgram.cs`:
 
@@ -117,6 +118,8 @@ CameraInfo has the next properties:
     public bool HasFlashUnit
     public float MinZoomFactor
     public float MaxZoomFactor
+    public float HorizontalViewAngle
+    public float VerticalViewAngle
     public List<Size> AvailableResolutions
 ```
 Start camera playback:
@@ -234,14 +237,19 @@ The control has several binding properties for take an snapshot:
 
 You have a complete example of MVVM in [MVVM Example](https://github.com/hjam40/Camera.MAUI/tree/master/Camera.MAUI.Test/MVVM)
 
+For barcodes detection, you must set the Camera Control BarCodeDecoder property.
+Enable and Handle barcodes detection with Camera.MAUI.ZXing:
+```csharp
+    using Camera.MAUI.ZXing;
+```
 
-Enable and Handle barcodes detection:
 ```csharp
     cameraView.BarcodeDetected += CameraView_BarcodeDetected;
-    cameraView.BarCodeOptions = new ZXingHelper.BarcodeDecodeOptions
+    cameraView.BarCodeDecoder = new ZXingBarcodeDecoder();
+    cameraView.BarCodeOptions = new BarcodeDecodeOptions
     {
         AutoRotate = true,
-        PossibleFormats = { ZXing.BarcodeFormat.QR_CODE },
+        PossibleFormats = { BarcodeFormat.QR_CODE },
         ReadMultipleCodes = false,
         TryHarder = true,
         TryInverted = true
@@ -279,6 +287,10 @@ Use the control and its bindable properties:
                  BarcodeWidth="200" BarcodeHeight="200" BarcodeMargin="5"
                  BarcodeBackground="White" BarcodeForeground="Blue"
                  BarcodeFormat="QR_CODE" />
+```
+Set the BarcodeEncoder property to enable de image generator (example with Camera.MAUI.ZXing):
+```csharp
+barcodeImage.BarcodeEncoder = new ZXingBarcodeEncoder();
 ```
 Set the barcode property to generate the image:
 ```csharp

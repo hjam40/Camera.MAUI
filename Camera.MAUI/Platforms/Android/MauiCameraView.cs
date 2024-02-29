@@ -42,6 +42,7 @@ internal class MauiCameraView: GridLayout
     private AudioManager audioManager;
     private readonly System.Timers.Timer timer;
     private readonly SparseIntArray ORIENTATIONS = new();
+    private readonly SparseIntArray ORIENTATIONSFRONT = new();
     private CameraCharacteristics camChars;
     private PreviewCaptureStateCallback sessionCallback;
     private byte[] capturePhoto = null;
@@ -67,6 +68,10 @@ internal class MauiCameraView: GridLayout
         ORIENTATIONS.Append((int)SurfaceOrientation.Rotation90, 0);
         ORIENTATIONS.Append((int)SurfaceOrientation.Rotation180, 270);
         ORIENTATIONS.Append((int)SurfaceOrientation.Rotation270, 180);
+        ORIENTATIONSFRONT.Append((int)SurfaceOrientation.Rotation0, 270);
+        ORIENTATIONSFRONT.Append((int)SurfaceOrientation.Rotation90, 0);
+        ORIENTATIONSFRONT.Append((int)SurfaceOrientation.Rotation180, 90);
+        ORIENTATIONSFRONT.Append((int)SurfaceOrientation.Rotation270, 180);
         InitDevices();
     }
 
@@ -157,6 +162,8 @@ internal class MauiCameraView: GridLayout
                         videoSize = ChooseVideoSize(map.GetOutputSizes(Class.FromType(typeof(ImageReader))));
                         recording = true;
 
+                        if (File.Exists(file)) File.Delete(file);
+
                         if (OperatingSystem.IsAndroidVersionAtLeast(31))
                             mediaRecorder = new MediaRecorder(context);
                         else
@@ -178,7 +185,7 @@ internal class MauiCameraView: GridLayout
                         mediaRecorder.SetAudioEncoder(AudioEncoder.Aac);
                         IWindowManager windowManager = context.GetSystemService(Context.WindowService).JavaCast<IWindowManager>();
                         int rotation = (int)windowManager.DefaultDisplay.Rotation;
-                        int orientation = ORIENTATIONS.Get(rotation);
+                        int orientation = cameraView.Camera.Position == CameraPosition.Back ? orientation = ORIENTATIONS.Get(rotation) : orientation = ORIENTATIONSFRONT.Get(rotation);
                         mediaRecorder.SetOrientationHint(orientation);
                         mediaRecorder.Prepare();
 

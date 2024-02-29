@@ -20,10 +20,6 @@
   <PropertyGroup>
     <RestorePackagesPath>C:\nug</RestorePackagesPath>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net7.0-ios'">
-	  <PackageReference Include="Xamarin.MLKit.iOS.BarcodeScanning.JimmyPun610" Version="1.6.0.1" />
-	</ItemGroup>
   
 	<ItemGroup>
 	  <ProjectReference Include="..\Camera.MAUI\Camera.MAUI.csproj" />

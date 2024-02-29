@@ -581,11 +581,15 @@ public class CameraView : View, ICameraView
         }
         if (withStorageWrite)
         {
-            status = await Permissions.CheckStatusAsync<Permissions.StorageWrite>();
+            status = await Permissions.CheckStatusAsync<Permissions.Media>();
             if (status != PermissionStatus.Granted)
             {
-                status = await Permissions.RequestAsync<Permissions.StorageWrite>();
-                if (status != PermissionStatus.Granted) return false;
+                status = await Permissions.CheckStatusAsync<Permissions.Media>();
+                if (status != PermissionStatus.Granted)
+                {
+                    PermissionStatus status1 = await Permissions.RequestAsync<Permissions.Media>();
+                    if (status1 != PermissionStatus.Granted) return false;
+                }
             }
         }
         return true;
