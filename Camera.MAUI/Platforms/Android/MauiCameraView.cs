@@ -448,8 +448,7 @@ internal class MauiCameraView: GridLayout
                 bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, bitmap.Width, bitmap.Height, textureView.GetTransform(null), false);
                 float xscale = (float)oriWidth / bitmap.Width;
                 float yscale = (float)oriHeight / bitmap.Height;
-                //bitmap = Bitmap.CreateBitmap(bitmap, Math.Abs(bitmap.Width - (int)((float)Width*xscale)) / 2, Math.Abs(bitmap.Height - (int)((float)Height * yscale)) / 2, Width, Height);
-                bitmap = Bitmap.CreateBitmap(bitmap, 0, 0, Width, Height);
+                bitmap = Bitmap.CreateBitmap(bitmap, (bitmap.Width - Width)/2, (bitmap.Height - Height) / 2, Width, Height);
                 if (textureView.ScaleX == -1)
                 {
                     Matrix matrix = new();
