@@ -29,21 +29,16 @@
 		<Authors>hjam40</Authors>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<Version>1.5</Version>
-		<PackageReleaseNotes>Split barcode encoder/decoder in a different package. Fix some bugs
-</PackageReleaseNotes>
-		<PackageLicenseFile>license.md</PackageLicenseFile>
+		<PackageReleaseNotes>Split barcode encoder/decoder in a different package. Fix some bugs</PackageReleaseNotes>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)'=='net7.0-ios'">
 	  <ProvisioningType>manual</ProvisioningType>
 	</PropertyGroup>
-
+	
 	<ItemGroup>
-	  <None Remove="license.md" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <EmbeddedResource Include="license.md">
+	  <EmbeddedResource Include="../LICENSE.md">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </EmbeddedResource>

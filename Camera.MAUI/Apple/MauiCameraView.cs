@@ -75,7 +75,7 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         {
             try
             {
-                var deviceDescoverySession = AVCaptureDeviceDiscoverySession.Create(new AVCaptureDeviceType[] { AVCaptureDeviceType.BuiltInWideAngleCamera }, AVMediaTypes.Video, AVCaptureDevicePosition.Unspecified);
+                var deviceDescoverySession = AVCaptureDeviceDiscoverySession.Create(new AVCaptureDeviceType[] { AVCaptureDeviceType.BuiltInWideAngleCamera, AVCaptureDeviceType.BuiltInUltraWideCamera, AVCaptureDeviceType.BuiltInDualWideCamera, AVCaptureDeviceType.BuiltInTripleCamera, AVCaptureDeviceType.BuiltInTelephotoCamera }, AVMediaTypes.Video, AVCaptureDevicePosition.Unspecified);
                 camDevices = deviceDescoverySession.Devices;
                 cameraView.Cameras.Clear();
                 foreach (var device in camDevices)
@@ -573,7 +573,6 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
         }
 
         NSData imageData = AVCapturePhotoOutput.GetJpegPhotoDataRepresentation(photoSampleBuffer, previewPhotoSampleBuffer);
-
         photo = new UIImage(imageData);
         photoTaken = true;
     }
