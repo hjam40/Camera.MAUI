@@ -179,8 +179,9 @@ internal class MauiCameraView: GridLayout
                         var maxVideoSize = ChooseMaxVideoSize(map.GetOutputSizes(Class.FromType(typeof(ImageReader))));
                         if (Resolution.Width != 0 && Resolution.Height != 0)
                             maxVideoSize = new((int)Resolution.Width, (int)Resolution.Height);
-                        mediaRecorder.SetVideoSize(maxVideoSize.Width, maxVideoSize.Height);
 
+                        videoSize = maxVideoSize;
+                        mediaRecorder.SetVideoSize(maxVideoSize.Width, maxVideoSize.Height);
                         mediaRecorder.SetVideoEncoder(VideoEncoder.H264);
                         mediaRecorder.SetAudioEncoder(AudioEncoder.Aac);
                         IWindowManager windowManager = context.GetSystemService(Context.WindowService).JavaCast<IWindowManager>();
@@ -291,6 +292,8 @@ internal class MauiCameraView: GridLayout
                         var maxVideoSize = ChooseMaxVideoSize(map.GetOutputSizes(Class.FromType(typeof(ImageReader))));
                         if (PhotosResolution.Width != 0 && PhotosResolution.Height != 0)
                             maxVideoSize = new((int)PhotosResolution.Width, (int)PhotosResolution.Height);
+
+                        videoSize = maxVideoSize;
                         imgReader = ImageReader.NewInstance(maxVideoSize.Width, maxVideoSize.Height, ImageFormatType.Jpeg, 1);
                         backgroundThread = new HandlerThread("CameraBackground");
                         backgroundThread.Start();
