@@ -581,27 +581,28 @@ internal class MauiCameraView : UIView, IAVCaptureVideoDataOutputSampleBufferDel
     public override void LayoutSubviews()
     {
         base.LayoutSubviews();
-        CATransform3D transform = CATransform3D.MakeRotation(0, 0, 0, 1.0f);
-        switch (UIDevice.CurrentDevice.Orientation)
-        {
-            case UIDeviceOrientation.Portrait:
-                transform = CATransform3D.MakeRotation(0, 0, 0, 1.0f);
-                break;
-            case UIDeviceOrientation.PortraitUpsideDown:
-                transform = CATransform3D.MakeRotation((nfloat)Math.PI, 0, 0, 1.0f);
-                break;
-            case UIDeviceOrientation.LandscapeLeft:
-                var rotation = cameraView.Camera?.Position == CameraPosition.Back ? -Math.PI / 2 : Math.PI / 2;
-                transform = CATransform3D.MakeRotation((nfloat)rotation, 0, 0, 1.0f);
-                break;
-            case UIDeviceOrientation.LandscapeRight:
-                var rotation2 = cameraView.Camera?.Position == CameraPosition.Back ? Math.PI / 2 : -Math.PI /2;
-                transform = CATransform3D.MakeRotation((nfloat)rotation2, 0, 0, 1.0f);
-                break;
-        }
 
-        PreviewLayer.Transform = transform;
+        if(PreviewLayer?.Connection != null)
+            PreviewLayer.Connection.VideoOrientation = GetInterfaceOrientation();
         PreviewLayer.Frame = Layer.Bounds;
+    }
+
+    private AVCaptureVideoOrientation GetInterfaceOrientation()
+    {
+        IEnumerable<UIScene> scenes = UIApplication.SharedApplication.ConnectedScenes;
+		var interfaceOrientation = scenes.FirstOrDefault() is UIWindowScene windowScene
+			? windowScene.InterfaceOrientation
+			: UIApplication.SharedApplication.StatusBarOrientation;
+                                  
+
+        return interfaceOrientation switch
+		{
+			UIInterfaceOrientation.Portrait => AVCaptureVideoOrientation.Portrait,
+			UIInterfaceOrientation.PortraitUpsideDown => AVCaptureVideoOrientation.PortraitUpsideDown,
+			UIInterfaceOrientation.LandscapeRight => AVCaptureVideoOrientation.LandscapeRight,
+			UIInterfaceOrientation.LandscapeLeft => AVCaptureVideoOrientation.LandscapeLeft,
+			_ => AVCaptureVideoOrientation.Portrait
+		};
     }
 
     public void FinishedRecording(AVCaptureFileOutput captureOutput, NSUrl outputFileUrl, NSObject[] connections, NSError error)
