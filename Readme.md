@@ -69,7 +69,12 @@ Make sure that you enter a clear and valid reason for your app to access the cam
 
 #### Windows
 
-In your Package.appxmanifest file (Platforms\Windows) go to Capabilities and mark Web Camera and Microphone.
+In your Package.appxmanifest file (Platforms\Windows) go to Capabilities and mark Web Camera and Microphone:
+
+```xml
+    <DeviceCapability Name="webcam"/>
+    <DeviceCapability Name="microphone"/>
+```
 
 For more information on permissions, see the [Microsoft Docs](https://docs.microsoft.com/dotnet/maui/platform-integration/appmodel/permissions).
 
